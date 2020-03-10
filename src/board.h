@@ -1,5 +1,10 @@
 #ifndef BOARD_H
 #define BOARD_H
+
+#define INIT_MODE 0
+#define EDIT_MODE 1
+#define SOLVE_MODE 2
+
 typedef struct Cell
 {
   int value;
@@ -17,7 +22,7 @@ typedef struct Board
 } Board;
 
 /* Return a pointer to a newly allocated board with blocks of size m*n
-and all values initialized to 0 */
+and all values initialized to 0 (valid field set to 1)*/
 Board* new_board(int m, int n);
 
 /* Free the board's allocated memory */

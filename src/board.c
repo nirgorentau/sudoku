@@ -27,6 +27,7 @@ Board* new_board(int m, int n)
     {
       board->matrix[i][j].value = 0;
       board->matrix[i][j].fixed = 0;
+      board->matrix[i][j].valid = 1;
     }
   }
   return board;

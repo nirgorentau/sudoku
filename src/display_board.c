@@ -23,7 +23,7 @@ void print_cell(Board* board, int i, int j)
   else
   {
     /*if erroneous and board is in edit more or mark errors set to 1 */
-    if(!cell->valid && (board->mode == 1 || board->mark_errors == 1)) printf("*");
+    if(!cell->valid && (board->mode == EDIT_MODE || board->mark_errors == 1)) printf("*");
     else printf(" ");
   }
 }
