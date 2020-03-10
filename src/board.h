@@ -1,9 +1,10 @@
-#ifndef BOARD
-#define BOARD
+#ifndef BOARD_H
+#define BOARD_H
 typedef struct Cell
 {
   int value;
   int fixed;
+  int valid;
 } Cell;
 
 typedef struct Board
@@ -25,31 +26,13 @@ void free_board(Board* board);
 /* Return the board size N = m*n */
 int get_N(Board* board);
 
-/* Return the value of the board cell in row i and column j */
-int get_value(Board* board, int i, int j);
-
-/* Set the value of the board cell in row i and column j */
-void set_value(Board* board, int i, int j, int val);
-
-/* Return whether the board cell in row i and column j is fixed (1) or not (0) */
-int get_fixed(Board* board, int i, int j);
-
-/* Set whether the board cell in row i and column j is fixed (1) or not (0) */
-void set_fixed(Board* board, int i, int j, int val);
+/* Return a pointer to the board cell in row i and column j */
+Cell* cell_at(Board* board, int i, int j);
 
 /* Return the index of the block containing 
 the board cell in row i and column j */
-int get_block(Board* board, int i, int j);
+int get_block_index(Board* board, int i, int j);
 
-/* Return the value of the cell_i'th cell in the block_i'th block */
-int get_block_value(Board* board, int block_i, int cell_i);
-
-/* Set the value of the cell_i'th cell in the block_i'th block */
-void set_block_value(Board* board, int block_i, int cell_i, int val);
-
-/* Return whether the cell_i'th cell in the block_i'th block is fixed (1) or not (0) */
-int get_block_fixed(Board* board, int block_i, int cell_i);
-
-/* Set whether the cell_i'th cell in the block_i'th block is fixed (1) or not (0) */
-void set_block_fixed(Board* board, int block_i, int cell_i, int val);
+/* Return the a pointer to the cell_i'th cell in the block_i'th block */
+Cell* cell_at_block(Board* board, int block_i, int cell_i);
 #endif

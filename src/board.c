@@ -49,27 +49,12 @@ int get_N(Board* board)
   return board->m * board->n;
 }
 
-int get_value(Board* board, int i, int j)
+Cell* cell_at(Board* board, int i, int j)
 {
-  return (board->matrix)[i][j].value;
+  return &(board->matrix[i][j]);
 }
 
-void set_value(Board* board, int i, int j, int val)
-{
-  board->matrix[i][j].value = val;
-}
-
-int get_fixed(Board* board, int i, int j)
-{
-  return board->matrix[i][j].fixed;
-}
-
-void set_fixed(Board* board, int i, int j, int val)
-{
-  board->matrix[i][j].fixed = val;
-}
-
-int get_block(Board* board, int i, int j)
+int get_block_index(Board* board, int i, int j)
 {
   int l, k;
   l = i / board->m;
@@ -77,30 +62,9 @@ int get_block(Board* board, int i, int j)
   return l * board->m + k;
 }
 
-int get_block_value(Board* board, int block_i, int cell_i)
+Cell* cell_at_block(Board* board, int block_i, int cell_i)
 {
   int l, k;
   block_indices_to_global_indices(board->m, board->n, block_i, cell_i, &l, &k);
-  return board->matrix[l][k].value;
-}
-
-void set_block_value(Board* board, int block_i, int cell_i, int val)
-{
-  int l, k;
-  block_indices_to_global_indices(board->m, board->n, block_i, cell_i, &l, &k);
-  board->matrix[l][k].value = val;
-}
-
-int get_block_fixed(Board* board, int block_i, int cell_i)
-{
-  int l, k;
-  block_indices_to_global_indices(board->m, board->n, block_i, cell_i, &l, &k);
-  return board->matrix[l][k].fixed;
-}
-
-void set_block_fixed(Board* board, int block_i, int cell_i, int val)
-{
-  int l, k;
-  block_indices_to_global_indices(board->m, board->n, block_i, cell_i, &l, &k);
-  board->matrix[l][k].fixed = val;
+  return &(board->matrix[l][k]);
 }
