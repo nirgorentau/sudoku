@@ -41,15 +41,15 @@ void set_fixed(Board* board, int i, int j, int val);
 the board cell in row i and column j */
 int get_block(Board* board, int i, int j);
 
-/* Return the value of the i'th board cell in the j'th block */
-int get_block_value(Board* board, int i, int j);
+/* Return the value of the cell_i'th cell in the block_i'th block */
+int get_block_value(Board* board, int block_i, int cell_i);
 
-/* Set  the value of the i'th board cell in the j'th block */
-void set_block_value(Board* board, int i, int j, int val);
+/* Set the value of the cell_i'th cell in the block_i'th block */
+void set_block_value(Board* board, int block_i, int cell_i, int val);
 
-/* Return wheter the i'th board cell in the j'th block is fixed */
-int get_block_fixed(Board* board, int i, int j);
+/* Return whether the cell_i'th cell in the block_i'th block is fixed (1) or not (0) */
+int get_block_fixed(Board* board, int block_i, int cell_i);
 
-/* Set whether the i'th board cell in block[k][l] is fixed (1) or not (0) */
-void set_block_fixed(Board* board, int i, int j, int val);
+/* Set whether the cell_i'th cell in the block_i'th block is fixed (1) or not (0) */
+void set_block_fixed(Board* board, int block_i, int cell_i, int val);
 #endif

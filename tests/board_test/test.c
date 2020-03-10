@@ -3,6 +3,9 @@
 int main()
 {
   Board* b = new_board(3, 3);
-  printf("%d\n", get_value(b, 0, 0));
+  set_value(b, 6, 6, 1);
+  printf("%d\n", get_value(b, 8, 8));
+  printf("%d\n", get_block_value(b, 8, 0));
+  printf("%d\n", get_block(b, 8, 8));
   return 0;
 }

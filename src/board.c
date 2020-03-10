@@ -1,12 +1,12 @@
 #include <stdlib.h>
 #include "board.h"
 
-static void block_indices_to_global_indices(int m, int n, int i, int j, int* l, int* k)
+static void block_indices_to_global_indices(int m, int n, int block_i, int cell_i, int* l, int* k)
 {
-  *l = (i / m) * m;
-  *k = (i % m) * n;
-  *l += j / n;
-  *k += j % n;
+  *l = (block_i / m) * m;
+  *k = (block_i % m) * n;
+  *l += cell_i / n;
+  *k += cell_i % n;
 }
 
 Board* new_board(int m, int n)
@@ -77,30 +77,30 @@ int get_block(Board* board, int i, int j)
   return l * board->m + k;
 }
 
-int get_block_value(Board* board, int i, int j)
+int get_block_value(Board* board, int block_i, int cell_i)
 {
   int l, k;
-  block_indices_to_global_indices(board->m, board->n, i, j, &l, &k);
+  block_indices_to_global_indices(board->m, board->n, block_i, cell_i, &l, &k);
   return board->matrix[l][k].value;
 }
 
-void set_block_value(Board* board, int i, int j, int val)
+void set_block_value(Board* board, int block_i, int cell_i, int val)
 {
   int l, k;
-  block_indices_to_global_indices(board->m, board->n, i, j, &l, &k);
+  block_indices_to_global_indices(board->m, board->n, block_i, cell_i, &l, &k);
   board->matrix[l][k].value = val;
 }
 
-int get_block_fixed(Board* board, int i, int j)
+int get_block_fixed(Board* board, int block_i, int cell_i)
 {
   int l, k;
-  block_indices_to_global_indices(board->m, board->n, i, j, &l, &k);
+  block_indices_to_global_indices(board->m, board->n, block_i, cell_i, &l, &k);
   return board->matrix[l][k].fixed;
 }
 
-void set_block_fixed(Board* board, int i, int j, int val)
+void set_block_fixed(Board* board, int block_i, int cell_i, int val)
 {
   int l, k;
-  block_indices_to_global_indices(board->m, board->n, i, j, &l, &k);
+  block_indices_to_global_indices(board->m, board->n, block_i, cell_i, &l, &k);
   board->matrix[l][k].fixed = val;
 }
