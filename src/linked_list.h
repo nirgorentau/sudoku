@@ -2,8 +2,8 @@
 #define LINKED_LIST_H
 
 /* The linked list is composed of nodes, each holding a value and pointers to the previous and next nodes.
-The "head" and "tail" of the list are represented by a special node with m=SENTINEL,
-whose next is the first item in the list and prev is the last. This special node is referred to as "sentinel" */
+The end of the list is represented by a special node with m=SENTINEL,
+whose next is the head of the list and prev is the tail. This special node is referred to as "sentinel" */
 
 #define SENTINEL NULL
 
