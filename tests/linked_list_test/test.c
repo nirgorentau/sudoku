@@ -24,6 +24,16 @@ int main() {
         head = head->next;
     } while (!is_sentinel(head));
     printf("\n");
+    head = get_tail(head);
+    do {
+        if (head->m == SENTINEL) {
+            printf("S ");
+        } else {
+            printf("%d ", head->m->i);
+        }
+        head = head->prev;
+    } while (!is_sentinel(head));
+    printf("\n");
     head = get_head(head);
     printf("%d\n", head->m->i);
     head = removeNode(head);
