@@ -12,7 +12,7 @@ typedef struct move
     int i;  /* The coordinates of the cell */
     int j;
     int prev_value; /* The original value in the cell */
-    int curr_falue; /* The new value in it */
+    int curr_value; /* The new value in it */
 } Move;
 
 

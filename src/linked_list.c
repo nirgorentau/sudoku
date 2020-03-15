@@ -23,7 +23,7 @@ Move* new_move(int i, int j, int prev_val, int curr_val) {
     m->i = i;
     m->j = j;
     m->prev_value = prev_val;
-    m->curr_falue = curr_val;
+    m->curr_value = curr_val;
     return m;
 }
 

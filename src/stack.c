@@ -27,7 +27,8 @@ Move* pop(Stack* s) {
     if (s->size == 0) {
         return NULL;
     }
-    Move* ret = s->top->m;
+    Move tmp = *(s->top->m);
+    Move* ret = new_move(tmp.i, tmp.j, tmp.prev_value, tmp.curr_value);
     s->top = removeNode(s->top);
     s->size--;
     return ret;
