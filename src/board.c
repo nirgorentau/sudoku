@@ -35,6 +35,7 @@ Board* new_board(int m, int n)
 
 void free_board(Board* board)
 {
+  if(board == NULL) return;
   int i, N;
   N = get_N(board);
   for (i = 0; i < N; i++)
@@ -68,4 +69,22 @@ Cell* cell_at_block(Board* board, int block_i, int cell_i)
   int l, k;
   block_indices_to_global_indices(board->m, board->n, block_i, cell_i, &l, &k);
   return &(board->matrix[l][k]);
+}
+
+/* Copy the contents of <from> to <to> */
+int copy_board(Board* to, Board* from)
+{
+  int i, j, N;
+  N = get_N(to);
+  for (i = 0; i < N; i++)
+  {
+    for (j = 0; j < N; j++)
+    {
+      cell_at(to, i, j)->value = cell_at(from, i, j)->value;
+      cell_at(to, i, j)->fixed = cell_at(from, i, j)->fixed;
+      cell_at(to, i, j)->valid = cell_at(from, i, j)->valid;
+    }
+  }
+  return 0;
+    
 }

@@ -40,4 +40,8 @@ int get_block_index(Board* board, int i, int j);
 
 /* Return the a pointer to the cell_i'th cell in the block_i'th block */
 Cell* cell_at_block(Board* board, int block_i, int cell_i);
+
+/* Copy the contents of <from> to <to> */
+int copy_board(Board* to, Board* from);
+
 #endif
