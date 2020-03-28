@@ -9,7 +9,7 @@
 
 typedef struct stack
 {
-    Node* top;
+    LinkedList* content;
     int size;
 } Stack;
 

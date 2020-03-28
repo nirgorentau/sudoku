@@ -28,16 +28,22 @@ typedef struct node
     struct node* next;
 } Node;
 
-Node* new_list(); /* create a new linked list and returns a pointer to its head */
-Move* new_move(int i, int j, int prev_val, int curr_val); /* creates a new element holding data of the move that was done */
-Node* get_head(Node* n); /* returns the head of the list containing n */
-Node* get_tail(Node* n); /* returns the tail of the list containing n */
-int is_sentinel(Node* n); /* returns 1 if n is the sentinel, 0 otherwise */
-void free_list(Node* n); /* frees a linked list */
-int length(Node* n); /* returns number of nodes in list */
-void append_next(Node* n, Move* value); /* adds a new node to the end of the list with the given value. */
-void append_prev(Node* n, Move* value); /* adds a new node to the beginning of the list with the given value. Updates the head to point to the new node*/
-Node* removeNode(Node* n); /* removes node n from the list and returns the pointer to the node after it. Does not remove the sentinel */
+typedef struct linked_list
+{
+    Node* head;
+    Node* curr;
+} LinkedList;
 
+LinkedList* new_list(); /* create a new linked list and returns a pointer to its head */
+Move* new_move(int i, int j, int prev_val, int curr_val); /* creates a new element holding data of the move that was done */
+void free_list(LinkedList* l); /* frees a linked list */
+int length(LinkedList* l); /* returns number of nodes in list */
+int move_back(LinkedList* l); /* Moves l->curr one step backwards.
+Returns 0 on success, else -1 */
+int move_forward(LinkedList* l); /* Moves l->curr one step forward.
+Returns 0 on success, else -1; */ 
+void append_next(LinkedList* l, Move* value); /* Adds a new list object after l->curr and removes all nodes after it */
+void append_prev(LinkedList* l, Move* value); /* Adds a new list object before l->curr */
+Move* remove_curr(LinkedList* l); /* removes l->curr from the list and returns its value */
 
 #endif
