@@ -126,8 +126,12 @@ int save(Board* board, char* filename)
     {
       return 1;
     }
-    /* TODO: check if solvable
-    mark all non-empty cells as fixed (maybe copy) */
+    if(!is_solvable(board))
+    {
+      /* board is not solveable */
+      return 1; 
+    }
+    /* TODO: mark all non-empty cells as fixed (maybe copy) */
     return save_board(board, filename);
   }
 }
@@ -140,7 +144,8 @@ void mark_errors(Board* board, int val)
 int set(Board* board, int x, int y, int z, LinkedList* lst)
 {
   Cell* cell;
-  int i, j, val, N;
+  Move* move;
+  int i, j, val, N, prev;
   N = get_N(board);
   if(x < 1 || x > N || y < 1 || y > N)
   {
@@ -155,6 +160,7 @@ int set(Board* board, int x, int y, int z, LinkedList* lst)
   i = y-1;
   j = x-1;
   cell = cell_at(board, i, j);
+  prev = cell->value;
   if(board->mode == SOLVE_MODE)
   {
     if (cell->fixed == 1)
@@ -165,7 +171,9 @@ int set(Board* board, int x, int y, int z, LinkedList* lst)
   }
   cell->value = z;
   set_valid_values(board); /* can be made more efficient since only neighbors need to be updated */
-  /* TODO: update move list */
+  move = new_move(1);
+  set_move(move, 0, i, j, prev, z);
+  append_next(lst, move, 1);
   return 0;
 }
 
@@ -248,6 +256,11 @@ int get_random_valid_value(int* values, int N)
   }
   if(s == 0) return 0;
   int* temp = malloc(sizeof(int) * s);
+  if(temp == NULL)
+  {
+    printf("Memory allocation failed\n");
+    exit(-1);
+  }
   j = 0;
   for ( i = 0; i < N; i++)
   {
@@ -300,7 +313,17 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   if(N*N - empty_cells_count + x < y) return 1;
   temp = new_board(m, n);
   cells = malloc(sizeof(Cell*)*empty_cells_count);
-  values = calloc(N, sizeof(int));
+  if(cells == NULL)
+  {
+    printf("Memory allocation failed\n");
+    exit(-1);
+  }
+  values = malloc(sizeof(int)*N);
+  if(values == NULL)
+  {
+    printf("Memory allocation failed\n");
+    exit(-1);
+  }
   for (k = 0; k < 1000; k++)
   {
     failed = 0;
@@ -327,6 +350,11 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   free_board(temp);
   free(cells);
   cells = malloc(sizeof(Cell*) * N*N);
+  if(cells == NULL)
+  {
+    printf("Memory allocation failed\n");
+    exit(-1);
+  }
   for ( i = 0; i < N; i++)
   {
     for ( j = 0; j < N; j++)
@@ -382,7 +410,12 @@ static int obvious_value(Board* board, int i, int j)
   Cell* temp;
   if(cell_at(board, i, j)->value != 0) return 0;
   N = get_N(board);
-  values = calloc(N, sizeof(int));
+  values = malloc(sizeof(int)*N);
+  if(values == NULL)
+  {
+    printf("Memory allocation failed\n");
+    exit(-1);
+  }
   set_invalid_values_for_cell(board, cell_at(board, i, j), values);
   /* check only one value is still available (0) and set res to it*/
   res = 0;
@@ -428,7 +461,7 @@ int autofill(Board* board, LinkedList* lst)
 int exit_program(Board* board, LinkedList* lst)
 {
   free_board(board);
-  /* TODO: free lst */
+  free_list(lst);
   printf("Exiting...\n");
   exit(0);
 }
