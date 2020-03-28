@@ -29,7 +29,7 @@ void next_empty(Board* b, int i, int j, int* ret) {
 }
 
 /* TODO: Move to appropriate module */
-int isValid(Board *b, int i, int j, int val) {
+int is_valid(Board *b, int i, int j, int val) {
     int k, block=get_block_index(b, i, j), N = get_N(b);
     if (val == 0) {
         return 1;
@@ -53,7 +53,7 @@ Returns 0 if there is no such value */
 int lowest_available_option(Board* b, int i, int j, int min) {
     int N = get_N(b), k;
     for (k = min; k <= N; k++) {
-        if (isValid(b, i, j, k)) {
+        if (is_valid(b, i, j, k)) {
             return k;
         }
     }
@@ -62,13 +62,15 @@ int lowest_available_option(Board* b, int i, int j, int min) {
 
 /* For debugging only */
 void print_stack(Stack* s) {
-    Node* n = s->top;
-    int i;
-    while (!is_sentinel(n)) {
-        printf("(%d, %d) ", n->m->i, n->m->j);
-        n = n->next;
+    s->content->curr = s->content->head;
+    if (s->content->curr == NULL) {
+        printf("EMPTY\n");
+        return;
     }
-    printf("SENTINEL\n");
+    do {
+        printf("(%d, %d) ", s->content->curr->m->i, s->content->curr->m->j);
+    } while (move_forward(s->content) != -1);
+    printf("END\n");
 }
 
 /* TODO: This does not iterate over boards properly - allows 1 empty cell at solution board.
@@ -80,6 +82,7 @@ int solution_count(Board* b) {
     int i, j;
     int k = 1; /* The value we check */
     int check_next[2] = {0, 0}; /* An array for lowest_available_option */
+    int bin; /* for pop */
     Stack* s = new_stack();
     Board* temp_board = new_board(b->m, b->n);
     Cell* curr_cell;
@@ -113,7 +116,9 @@ int solution_count(Board* b) {
     do
     {
         if (k != 0) {
-            push(s, new_move(i, j, 0, k));
+            tmp = new_move(1);
+            set_move(tmp, 0, i, j, 0, k);
+            push(s, tmp, 1);
             next_empty(temp_board, i, j, check_next);
             if(check_next[0] != N)
             {
@@ -124,13 +129,13 @@ int solution_count(Board* b) {
             {
                 count++;
                 printf("Found Solution #%d for %dx%d\n", count, temp_board->m, temp_board->n);
-                tmp = pop(s);
+                tmp = pop(s, &bin);
                 i = tmp->i;
                 j = tmp->j;
                 k = tmp->curr_value;
             }
         } else {
-            tmp = pop(s);
+            tmp = pop(s, &bin);
             i = tmp->i;
             j = tmp->j;
             k = tmp->curr_value;

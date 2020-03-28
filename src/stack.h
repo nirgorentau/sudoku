@@ -15,8 +15,8 @@ typedef struct stack
 
 Stack* new_stack(); /* creates a new stack and returns a pointer to it */
 void free_stack(Stack* s); /* Frees a stack's memory */
-void push(Stack* s, Move* m); /* pushes a move to the stack */
-Move* pop(Stack* s); /* pops a move from the stack. if stack is empty returns NULL */
+void push(Stack* s, Move* m, int count); /* pushes an array of moves of length <count> to the stack */
+Move* pop(Stack* s, int* count); /* pops an array of moves from the stack, and puts its length in count. if stack is empty returns NULL and sets count to 0 */
 
 
 #endif

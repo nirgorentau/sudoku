@@ -17,18 +17,18 @@ void free_stack(Stack* s) {
     free(s);
 }
 
-void push(Stack* s, Move* m) {
-    append_prev(s->content, m);
+void push(Stack* s, Move* m, int count) {
+    append_prev(s->content, m, count);
     s->content->curr = s->content->head;
     s->size++;
 }
 
-Move* pop(Stack* s) {
+Move* pop(Stack* s, int* count) {
     Move* ret;
     if (s->size == 0) {
         return NULL;
     }
     s->size--;
-    ret = remove_curr(s->content);
+    ret = remove_curr(s->content, count);
     return ret;
 } 
