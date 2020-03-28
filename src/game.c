@@ -425,9 +425,10 @@ int autofill(Board* board, LinkedList* lst)
   return 0;
 }
 
-int exit(Board* board, LinkedList* lst)
+int exit_program(Board* board, LinkedList* lst)
 {
   free_board(board);
   /* TODO: free lst */
-  return 0;
+  printf("Exiting...\n");
+  exit(0);
 }
