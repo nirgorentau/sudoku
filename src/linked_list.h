@@ -7,6 +7,11 @@ whose next is the head of the list and prev is the tail. This special node is re
 
 #define SENTINEL NULL
 
+typedef struct linked_list
+{
+
+} LinkedList;
+
 typedef struct move
 {
     int i;  /* The coordinates of the cell */
