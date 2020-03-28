@@ -142,7 +142,9 @@ Move* remove_curr(LinkedList* l){
         free(l->curr->m);
         free(l->curr);
         l->curr = l->head;
-        l->curr->prev = NULL;
+        if (l->curr != NULL) {
+            l->curr->prev = NULL;
+        }
     } else if (l->curr->next == NULL) {
         l->curr->prev->next = NULL;
         tmp = l->curr->prev;

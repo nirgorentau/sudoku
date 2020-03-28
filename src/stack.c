@@ -9,27 +9,26 @@ Stack* new_stack() {
         exit(-1);
     }
     s->size = 0;
-    s->top = new_list();
+    s->content = new_list();
 }
 
 void free_stack(Stack* s) {
-    free_list(s->top);
+    free_list(s->content);
     free(s);
 }
 
 void push(Stack* s, Move* m) {
-    append_prev(s->top, m);
-    s->top = s->top->prev;
+    append_prev(s->content, m);
+    s->content->curr = s->content->head;
     s->size++;
 }
 
 Move* pop(Stack* s) {
+    Move* ret;
     if (s->size == 0) {
         return NULL;
     }
-    Move tmp = *(s->top->m);
-    Move* ret = new_move(tmp.i, tmp.j, tmp.prev_value, tmp.curr_value);
-    s->top = removeNode(s->top);
     s->size--;
+    ret = remove_curr(s->content);
     return ret;
 } 
