@@ -21,6 +21,7 @@ typedef struct node
     Move* m;
     struct node* prev;
     struct node* next;
+    int move_count; /* The number of moves in the node */
 } Node;
 
 typedef struct linked_list
@@ -30,15 +31,16 @@ typedef struct linked_list
 } LinkedList;
 
 LinkedList* new_list(); /* create a new linked list and returns a pointer to its head */
-Move* new_move(int i, int j, int prev_val, int curr_val); /* creates a new element holding data of the move that was done */
+Move* new_move(int count); /* creates an array of empty moves */
+void set_move(Move* m, int index, int i, int j, int prev_val, int curr_val); /* Sets a given move's data */
 void free_list(LinkedList* l); /* frees a linked list */
 int length(LinkedList* l); /* returns number of nodes in list */
 int move_back(LinkedList* l); /* Moves l->curr one step backwards.
 Returns 0 on success, else -1 */
 int move_forward(LinkedList* l); /* Moves l->curr one step forward.
 Returns 0 on success, else -1; */ 
-void append_next(LinkedList* l, Move* value); /* Adds a new list object after l->curr and removes all nodes after it */
-void append_prev(LinkedList* l, Move* value); /* Adds a new list object before l->curr */
-Move* remove_curr(LinkedList* l); /* removes l->curr from the list and returns its value */
+void append_next(LinkedList* l, Move* value, int length); /* Adds a new list object after l->curr and removes all nodes after it */
+void append_prev(LinkedList* l, Move* value, int length); /* Adds a new list object before l->curr */
+Move* remove_curr(LinkedList* l, int* count); /* removes l->curr from the list and returns its value, and puts the number of moves in it in count */
 
 #endif

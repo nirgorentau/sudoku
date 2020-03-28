@@ -2,17 +2,27 @@
 #include <stdio.h>
 #include "linked_list.h"
 
-Move* new_move(int i, int j, int prev_val, int curr_val) {
-    Move* m = (Move*) malloc(sizeof(Move));
+Move* new_move(int count) {
+    Move* m = (Move*) malloc(count*sizeof(Move));
+    int i;
     if (m == NULL) {
         printf("Memory allocation for move object failed\n");
         exit(-1);
     }
-    m->i = i;
-    m->j = j;
-    m->prev_value = prev_val;
-    m->curr_value = curr_val;
+    for(i = 0; i < count; i++) {
+        m[i].i = 0;
+        m[i].j = 0;
+        m[i].prev_value = 0;
+        m[i].curr_value = 0;
+    }
     return m;
+}
+
+void set_move(Move* m, int index,  int i, int j, int prev_val, int curr_val) {
+    m[index].i = i;
+    m[index].j = j;
+    m[index].prev_value = prev_val;
+    m[index].curr_value = curr_val;
 }
 
 LinkedList* new_list() {
@@ -74,9 +84,10 @@ int length(LinkedList* l) {
     return count;
 }
 
-void append_next(LinkedList* l, Move* value) {
+void append_next(LinkedList* l, Move* value, int move_count) {
     Node* new_node = (Node*) malloc(sizeof(Node));
     Node* tmp, *prev;
+    int bin; /* To give to remove_curr */
     if (new_node == NULL) {
         printf("Memory allocation for list object failed\n");
         exit(-1);
@@ -84,6 +95,7 @@ void append_next(LinkedList* l, Move* value) {
     new_node->m = value;
     new_node->next = NULL;
     new_node->prev = NULL;
+    new_node->move_count = move_count;
     if (l->head == NULL) {
         l->head = new_node;
         l->curr = l->head;
@@ -98,13 +110,13 @@ void append_next(LinkedList* l, Move* value) {
         tmp = l->curr;
         l->curr = new_node;
         while (move_forward(l) != -1){
-            remove_curr(l);
+            remove_curr(l, &bin);
         }
         l->curr = tmp;
     }
 }
 
-void append_prev(LinkedList* l, Move* value) {
+void append_prev(LinkedList* l, Move* value, int move_count) {
     Node* new_node = (Node*) malloc(sizeof(Node));
     if (new_node == NULL) {
         printf("Memory allocation for list object failed\n");
@@ -113,6 +125,7 @@ void append_prev(LinkedList* l, Move* value) {
     new_node->m = value;
     new_node->next = NULL;
     new_node->prev = NULL;
+    new_node->move_count = move_count;
     if (l->head == NULL) {
         l->head = new_node;
         l->curr = l->head;
@@ -131,11 +144,18 @@ void append_prev(LinkedList* l, Move* value) {
     }
 }
 
-Move* remove_curr(LinkedList* l){
-    Move* value = new_move(l->curr->m->i, l->curr->m->j, l->curr->m->prev_value, l->curr->m->curr_value);
+Move* remove_curr(LinkedList* l, int* count){
+    int i;
+    Move* value;
     Node* tmp;
     if (l->curr == NULL) {
+        *count = 0;
         return NULL;
+    }
+    *count = l->curr->move_count;
+    value = new_move(l->curr->move_count);
+    for(i = 0; i < l->curr->move_count; i++) {
+        set_move(value, i, l->curr->m[i].i, l->curr->m[i].j, l->curr->m[i].prev_value, l->curr->m[i].curr_value);
     }
     if (l->curr->prev == NULL) {
         l->head = l->curr->next;
