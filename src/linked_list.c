@@ -3,8 +3,12 @@
 #include "linked_list.h"
 
 Move* new_move(int count) {
-    Move* m = (Move*) malloc(count*sizeof(Move));
+    Move* m;
     int i;
+    if (count == 0) {
+        return NULL;
+    }
+    m = (Move*) malloc(count*sizeof(Move));
     if (m == NULL) {
         printf("Memory allocation for move object failed\n");
         exit(-1);
@@ -19,6 +23,9 @@ Move* new_move(int count) {
 }
 
 void set_move(Move* m, int index,  int i, int j, int prev_val, int curr_val) {
+    if (m == NULL) {
+        return;
+    }
     m[index].i = i;
     m[index].j = j;
     m[index].prev_value = prev_val;
@@ -44,6 +51,7 @@ LinkedList* new_head() {
     head->prev = NULL;
     head->m = HEAD_NODE;
     l->head = head;
+    l->curr = l->head;
     return l;
 
 }

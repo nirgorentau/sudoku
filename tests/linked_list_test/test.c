@@ -1,48 +1,6 @@
 #include <stdio.h>
 #include "linked_list.h"
 
-/*
-int main() {
-    Node* head = new_list();
-    Move *a = new_move(0, 0, 0, 1),
-         *b = new_move(1, 0, 0, 1),
-         *c = new_move(2, 0, 0, 1);
-    printf("New list created successfully\n");
-    append_next(head, a);
-    printf("Appended a\n");
-    append_next(head->next, b);
-    printf("Appended b\n");
-    append_prev(head, c);
-    printf("Appended c\n");
-    printf("length: %d\n", length(head));
-    head = get_head(head);
-    do {
-        if (head->m == SENTINEL) {
-            printf("S ");
-        } else {
-            printf("%d ", head->m->i);
-        }
-        head = head->next;
-    } while (!is_sentinel(head));
-    printf("\n");
-    head = get_tail(head);
-    do {
-        if (head->m == SENTINEL) {
-            printf("S ");
-        } else {
-            printf("%d ", head->m->i);
-        }
-        head = head->prev;
-    } while (!is_sentinel(head));
-    printf("\n");
-    head = get_head(head);
-    printf("%d\n", head->m->i);
-    head = removeNode(head);
-    printf("%d\n", head->m->i);
-    free_list(head);
-    return 0;
-}
-*/
 
 void printlist(LinkedList* l) {
     Node* tmp = l->curr;
@@ -72,6 +30,7 @@ void main() {
          *b = new_move(1),
          *c = new_move(1),
          *d = new_move(1);
+    int bin = 0;
     set_move(a, 0, 0, 0, 0, 1);
     set_move(b, 0, 1, 0, 0, 1);
     set_move(c, 0, 2, 0, 0, 1);
@@ -92,4 +51,13 @@ void main() {
     append_next(l, d, 1);
     printf("Appended d\n");
     printlist(l);
+    free_list(l);
+    l = new_head();
+    printf("Created new list\n");
+    free_list(l);
+    l = new_head();
+    printf("Created new list\n");
+    remove_curr(l, &bin);
+    printf("removed first item\n");
+    free_list(l);
 }
