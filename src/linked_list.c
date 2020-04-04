@@ -36,12 +36,26 @@ LinkedList* new_list() {
     return l;
 }
 
+LinkedList* new_head() {
+    LinkedList* l = new_list();
+    Node* head = (Node*) malloc(sizeof(Node));
+    head->move_count = 0;
+    head->next = NULL;
+    head->prev = NULL;
+    head->m = HEAD_NODE;
+    l->head = head;
+    return l;
+
+}
+
 void free_list(LinkedList* l) {
     Node* curr = l->head;
     Node* tmp;
     while (curr != NULL) {
         tmp = curr->next;
-        free(curr->m);
+        if (curr->m != NULL) {
+            free(curr->m);
+        }
         free(curr);
         curr = tmp;
     }
@@ -159,7 +173,9 @@ Move* remove_curr(LinkedList* l, int* count){
     }
     if (l->curr->prev == NULL) {
         l->head = l->curr->next;
-        free(l->curr->m);
+        if (l->curr->m != NULL) {
+            free(l->curr->m);
+        }
         free(l->curr);
         l->curr = l->head;
         if (l->curr != NULL) {
@@ -168,14 +184,18 @@ Move* remove_curr(LinkedList* l, int* count){
     } else if (l->curr->next == NULL) {
         l->curr->prev->next = NULL;
         tmp = l->curr->prev;
-        free(l->curr->m);
+        if (l->curr->m != NULL) {
+            free(l->curr->m);
+        }
         free(l->curr);
         l->curr = tmp;
     } else {
         l->curr->prev->next = l->curr->next;
         l->curr->next->prev = l->curr->prev;
         tmp = l->curr->prev;
-        free(l->curr->m);
+        if (l->curr->m != NULL) {
+            free(l->curr->m);
+        }
         free(l->curr);
         l->curr = tmp;
     }

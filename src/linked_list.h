@@ -1,11 +1,10 @@
 #ifndef LINKED_LIST_H
 #define LINKED_LIST_H
 
-/* The linked list is composed of nodes, each holding a value and pointers to the previous and next nodes.
-The end of the list is represented by a special node with m=SENTINEL,
-whose next is the head of the list and prev is the tail. This special node is referred to as "sentinel" */
+/* The linked list is composed of nodes, each holding a value and pointers to the previous and next nodes. 
+Some lists can be made with a special head Node whose value is NULL */
 
-#define SENTINEL NULL
+#define HEAD_NODE NULL
 
 typedef struct move
 {
@@ -32,6 +31,7 @@ typedef struct linked_list
 
 LinkedList* new_list(); /* create a new linked list and returns a pointer to its head */
 Move* new_move(int count); /* creates an array of empty moves */
+LinkedList* new_head(); /* Creates a new list and sets its head to be a special head Node */
 void set_move(Move* m, int index, int i, int j, int prev_val, int curr_val); /* Sets a given move's data */
 void free_list(LinkedList* l); /* frees a linked list */
 int length(LinkedList* l); /* returns number of nodes in list */
