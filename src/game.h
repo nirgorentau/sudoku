@@ -8,10 +8,10 @@
 int is_cell_value_valid(Board *b, int i, int j, Cell* cell);
 
 /*Start a puzzle in solve mode*/
-int solve(Board** board, char* filename, LinkedList* lst);
+int solve(Board** board, char* filename, LinkedList** lst);
 
 /*Start a puzzle in edit mode*/
-int edit(Board** board, char* filename, LinkedList* lst);
+int edit(Board** board, char* filename, LinkedList** lst);
 
 /*Save the board to a file*/
 int save(Board* board, char* filename);
@@ -36,7 +36,7 @@ int generate(Board* board, int x, int y, LinkedList* lst);
 int undo(Board* board, LinkedList* lst);
 
 /*Redo a previously undone move*/
-int Redo(Board* board, LinkedList* lst);
+int redo(Board* board, LinkedList* lst);
 
 /*Show the solution of cell <x,y> */
 int hint(Board* board, int x, int y);
