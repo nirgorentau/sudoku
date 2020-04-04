@@ -85,6 +85,8 @@ int copy_board(Board* to, Board* from)
       cell_at(to, i, j)->valid = cell_at(from, i, j)->valid;
     }
   }
+  to->mode = from->mode;
+  to->mark_errors = from->mark_errors;
   return 0;
     
 }

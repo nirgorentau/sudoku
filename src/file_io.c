@@ -20,7 +20,10 @@ int save_board(Board* board, char* path)
     for ( j = 0; j < N; j++)
     {
       fprintf(f, "%d", cell_at(board, i, j)->value);
-      if(board->mode == EDIT_MODE || cell_at(board, i, j)->fixed) fprintf(f, ".");
+      if(cell_at(board, i, j)->value != 0)
+      {
+        if(board->mode == EDIT_MODE || cell_at(board, i, j)->fixed) fprintf(f, ".");
+      }
       if(j < N-1) fprintf(f, " ");
     }
     fprintf(f, "\n");
@@ -51,7 +54,11 @@ int load_board(Board** board, char* path)
       cell_at(tboard, i, j)->value = v;
       if(fscanf(f, "%c", &t)!=0)
       {
-        if (t == '.') cell_at(tboard, i, j)->fixed = 1;
+        if (t == '.') 
+        {
+          if(v == 0) return load_failure(board);
+          else cell_at(tboard, i, j)->fixed = 1;
+        }
         else if(t != ' ' && t != '\n' && t != '\t') return load_failure(tboard);
       }
     }
