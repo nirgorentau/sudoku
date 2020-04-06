@@ -78,7 +78,7 @@ static int are_fixed_cells_legal(Board* board)
   return 1;
 }
 
-int solve(Board** board, char* filename, LinkedList* lst)
+int solve(Board** board, char* filename, LinkedList** lst)
 {
   Board* temp;
   if(load_board(&temp, filename)!=0) return 1;
@@ -88,13 +88,14 @@ int solve(Board** board, char* filename, LinkedList* lst)
   *board = new_board(temp->m, temp->n);
   copy_board(*board, temp);
   (*board)->mode = SOLVE_MODE;
-  /* TODO: mark_errors? 
-  empty move list */
+  /* TODO: mark_errors? */
+  free_list(*lst);
+  *lst = new_head();
   free_board(temp);
   return 0;
 }
 
-int edit(Board** board, char* filename, LinkedList* lst)
+int edit(Board** board, char* filename, LinkedList** lst)
 {
   Board* temp;
   if(load_board(&temp, filename)!=0) return 1;
@@ -103,8 +104,9 @@ int edit(Board** board, char* filename, LinkedList* lst)
   *board = new_board(temp->m, temp->n);
   copy_board(*board, temp);
   (*board)->mode = EDIT_MODE;
-  /* TODO: mark_errors? 
-  empty move list */
+  /* TODO: mark_errors? */
+  free_list(*lst);
+  *lst = new_head();
   free_board(temp);
   return 0;
 }
@@ -295,6 +297,36 @@ int set_invalid_values_for_cell(Board* board, Cell* cell, int* values)
   return 0;
 }
 
+/* Allocate and set a new move array based on the differences between the boards to <*moves> and return the length of the array */
+int get_moves(Board* old_board, Board* new_board, Move** moves)
+{
+  int i, j, N, counter, k;
+  N = get_N(old_board);
+  counter = 0;
+  for ( i = 0; i < N; i++)
+  {
+    for ( j = 0; j < N; j++)
+    {
+      if(cell_at(old_board, i, j)->value != cell_at(new_board, i, j)->value) counter++;
+    }
+  }
+  if(counter) *moves = new_move(counter);
+  k = 0;
+  for ( i = 0; i < N; i++)
+  {
+    for ( j = 0; j < N; j++)
+    {
+      if(cell_at(old_board, i, j)->value != cell_at(new_board, i, j)->value)
+      {
+        set_move(*moves, k, i, j, cell_at(old_board, i, j)->value, cell_at(new_board, i, j)->value);
+        k++;
+      }
+    }
+  }
+  return counter;
+  
+}
+
 int generate(Board* board, int x, int y, LinkedList* lst)
 {
   int i, j, k, n, m, N, empty_cells_count, val, failed;
@@ -303,6 +335,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   Cell** cells;
   Cell* cell;
   int* values;
+  Move* moves;
   if(!(board->mode == EDIT_MODE)) return 1;
   if(!is_board_legal(board)) return 1;
   n = board->n;
@@ -332,7 +365,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     for (i = 0; i < x; i++)
     {
       cell = get_random_cell(cells, empty_cells_count, i);
-      values = set_invalid_values_for_cell(temp, cell, values);
+      set_invalid_values_for_cell(temp, cell, values);
       val = get_random_valid_value(values, N);
       if(val == 0)
       {
@@ -368,11 +401,73 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     cell = get_random_cell(cells, N, i);
     cell->value = 0;
   }
-  /*TODO: fix all cells? 
-  update lst*/
+  /*TODO: fix all cells? */
+  i = get_moves(board, solved_board, &moves);
+  if(i != 0) append_next(lst, moves, i);
   free(cells);
   copy_board(board, solved_board);
+  set_valid_values(board);
   free(solved_board);
+  return 0;
+}
+
+int undo(Board* board, LinkedList* lst)
+{
+  Move* moves;
+  int k, count;
+  count = lst->curr->move_count;
+  if(count == 0) 
+  {
+    /* No moves to undo */
+    return -1;
+  }
+  moves = lst->curr->m;
+  for (k = count-1; k >= 0; k--)
+  {
+    cell_at(board, moves[k].i, moves[k].j)->value = moves[k].prev_value;
+    /*TODO: print change */
+  }
+  set_valid_values(board);
+  move_back(lst);
+  return 0;
+}
+
+int redo(Board* board, LinkedList* lst)
+{
+  Move* moves;
+  int k, count;
+  if(move_forward(lst) == -1)
+  {
+    /*No moves to redo */
+    return -1;
+  }
+  count = lst->curr->move_count;
+  moves = lst->curr->m;
+  for (k = 0; k < count; k++)
+  {
+    cell_at(board, moves[k].i, moves[k].j)->value = moves[k].curr_value;
+    /*TODO: print change */
+  }
+  set_valid_values(board);
+  return 0;
+}
+
+int reset(Board* board, LinkedList* lst)
+{
+  Move* moves;
+  int k, count;
+  count = lst->curr->move_count;
+  while(count != 0) 
+  {
+    moves = lst->curr->m;
+    for (k = count-1; k >= 0; k--)
+    {
+      cell_at(board, moves[k].i, moves[k].j)->value = moves[k].prev_value;
+    }
+    count = lst->curr->move_count;
+    move_back(lst);
+  }
+  set_valid_values(board);
   return 0;
 }
 
@@ -439,18 +534,34 @@ static int obvious_value(Board* board, int i, int j)
 int autofill(Board* board, LinkedList* lst)
 {
   Board* temp;
-  int i, j, N;
+  int i, j, N, counter, k;
+  Move* moves;
   N = get_N(board);
   temp = new_board(board->m, board->n);
   copy_board(temp, board);
+  counter = 0;
   for (i = 0; i < N; i++)
   {
     for (j = 0; j < N; j++)
     {
       if(obvious_value(temp, i, j))
       {
+        counter++;
+      }
+    }
+  }
+  if(counter) moves = new_move(counter);
+  k = 0;
+  for (i = 0; i < N; i++)
+  {
+    for (j = 0; j < N; j++)
+    {
+      if(obvious_value(temp, i, j))
+      {
+        set_move(moves, k, i, j, cell_at(board, i, j)->value, obvious_value(temp, i, j));
         cell_at(board, i, j)->value = obvious_value(temp, i, j);
-        /*TODO: update move list */
+        append_next(lst, moves, counter);
+        k++;
       }
     }
   }
