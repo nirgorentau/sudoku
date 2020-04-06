@@ -365,7 +365,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     for (i = 0; i < x; i++)
     {
       cell = get_random_cell(cells, empty_cells_count, i);
-      values = set_invalid_values_for_cell(temp, cell, values);
+      set_invalid_values_for_cell(temp, cell, values);
       val = get_random_valid_value(values, N);
       if(val == 0)
       {
@@ -425,7 +425,7 @@ int undo(Board* board, LinkedList* lst)
   for (k = count-1; k >= 0; k--)
   {
     cell_at(board, moves[k].i, moves[k].j)->value = moves[k].prev_value;
-    /* print change */
+    /*TODO: print change */
   }
   set_valid_values(board);
   move_back(lst);
@@ -446,7 +446,7 @@ int redo(Board* board, LinkedList* lst)
   for (k = 0; k < count; k++)
   {
     cell_at(board, moves[k].i, moves[k].j)->value = moves[k].curr_value;
-    /* print change */
+    /*TODO: print change */
   }
   set_valid_values(board);
   return 0;
