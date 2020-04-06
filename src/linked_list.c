@@ -108,7 +108,7 @@ int length(LinkedList* l) {
 
 void append_next(LinkedList* l, Move* value, int move_count) {
     Node* new_node = (Node*) malloc(sizeof(Node));
-    Node* tmp, *prev;
+    Node* tmp;
     int bin; /* To give to remove_curr */
     if (new_node == NULL) {
         printf("Memory allocation for list object failed\n");

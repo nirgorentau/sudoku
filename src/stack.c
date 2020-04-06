@@ -10,6 +10,7 @@ Stack* new_stack() {
     }
     s->size = 0;
     s->content = new_list();
+    return s;
 }
 
 void free_stack(Stack* s) {

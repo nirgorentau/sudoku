@@ -79,7 +79,7 @@ but it might become an issue given more testing */
 int solution_count(Board* b) {
     int count = 0;
     int N = get_N(b);
-    int i, j;
+    int i=0, j=0;
     int k = 1; /* The value we check */
     int check_next[2] = {0, 0}; /* An array for lowest_available_option */
     int bin; /* for pop */
