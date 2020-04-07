@@ -221,7 +221,10 @@ int integer_linear_solve(Board* b, Board** res) {
         printf("Error code %d in GRBgetintattr(): %s\n", err, GRBgeterrormsg(env));
         return -1;
     }
-
+    free(in_use);
+    free(const_ind);
+    free(constraints);
+    free(var_types);
     if (solveable == GRB_OPTIMAL) {
         err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, N*N*N, sol);
         if (err) {
@@ -242,9 +245,15 @@ int integer_linear_solve(Board* b, Board** res) {
                 }
             }
         }
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
         return 0;
     } else {
         /* Unsolveable */
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
         return 1;
     }
 }
