@@ -10,7 +10,7 @@ int calc_index(int N, int x, int y, int val) {
 }
 
 /* TODO: Code cleanup */
-int integer_linear_solve(Board* b, Board** res) {
+int integer_linear_solve(Board* b, Board* res) {
     GRBenv* env = NULL;
     GRBmodel* model = NULL;
     int err;
@@ -235,11 +235,11 @@ int integer_linear_solve(Board* b, Board** res) {
             for (j = 0; j < N; j++) {
                 tmp = cell_at(b, i, j);
                 if (tmp->value != 0) {
-                    cell_at(*res, i, j)->value = tmp->value;
+                    cell_at(res, i, j)->value = tmp->value;
                 } else {
                     for (k = 1; k <= N; k++) {
                         if (sol[calc_index(N, i, j, k)] == 1) {
-                            cell_at(*res, i, j)->value = k;
+                            cell_at(res, i, j)->value = k;
                         }
                     }
                 }
@@ -260,8 +260,9 @@ int integer_linear_solve(Board* b, Board** res) {
 
 int is_solvable(Board* b) {
     Board* bin = new_board(b->m, b->n);
-    if(integer_linear_solve(b, &bin)) {
+    if(integer_linear_solve(b, bin)) {
 	    return 0;
     }
+    free_board(bin);
     return 1;
 }

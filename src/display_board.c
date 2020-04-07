@@ -14,8 +14,9 @@ void print_seperator_row(Board* board)
 void print_cell(Board* board, int i, int j)
 {
   int val;
+  Cell* cell;
   printf(" ");
-  Cell* cell = cell_at(board, i, j);
+  cell = cell_at(board, i, j);
   val = cell->value;
   if(val != 0) printf("%2d", val);
   else printf("  ");

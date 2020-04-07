@@ -57,8 +57,10 @@ LinkedList* new_head() {
 }
 
 void free_list(LinkedList* l) {
-    Node* curr = l->head;
+    Node* curr;
     Node* tmp;
+    if(l == NULL) return;
+    curr = l->head;
     while (curr != NULL) {
         tmp = curr->next;
         if (curr->m != NULL) {
@@ -108,7 +110,6 @@ int length(LinkedList* l) {
 
 void append_next(LinkedList* l, Move* value, int move_count) {
     Node* new_node = (Node*) malloc(sizeof(Node));
-    Node* tmp;
     int bin; /* To give to remove_curr */
     if (new_node == NULL) {
         printf("Memory allocation for list object failed\n");
@@ -129,12 +130,11 @@ void append_next(LinkedList* l, Move* value, int move_count) {
         }
         new_node->next = l->curr->next;
         l->curr->next = new_node;
-        tmp = l->curr;
         l->curr = new_node;
         while (move_forward(l) != -1){
             remove_curr(l, &bin);
         }
-        l->curr = tmp;
+        l->curr = new_node;
     }
 }
 

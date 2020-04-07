@@ -1,25 +1,50 @@
 #include <stdio.h>
+#include <lp_solver.h>
 #include <board.h>
-#include <file_io.h>
 #include <display_board.h>
-int main()
-{
-  Board* t;
-  Board* b = new_board(3, 3);
-  cell_at(b, 6, 6)->value = 1;
-  cell_at(b, 6, 6)->fixed = 1;
-  printf("%d\n", cell_at(b, 8, 8)->value);
-  printf("%d\n", cell_at_block(b, 8, 0)->value);
-  printf("%d\n", cell_at_block(b, 8, 8)->value);
-  display_board(b);
-  save_board(b, "save_file.txt");
-  if(load_board(&t, "load_file.txt") == 0)
-  {
-    puts("load successful");
-    display_board(t);
-    free_board(t);
-  }
-  else puts("load failed");
-  free_board(b);
-  return 0;
+#include <game.h>
+
+int main() {
+    LinkedList* lst = NULL;
+    Board* board = NULL;
+    solve(&board, "load_file.txt", &lst);
+    display_board(board);
+    printf("%d\n", lst->curr->move_count);
+    if(set(board, 9, 9, 4, lst))
+    {
+        puts("set error");
+    }
+    set(board, 9, 9, 5, lst);
+    printf("%d\n", lst->curr->move_count);
+    display_board(board);
+    if(undo(board, lst) == 0)
+    {
+        puts("undo succesful");
+    }
+    display_board(board);
+    redo(board, lst);
+    display_board(board);
+    undo(board, lst);
+    display_board(board);
+    undo(board, lst);
+    display_board(board);
+    redo(board, lst);
+    display_board(board);
+    redo(board, lst);
+    display_board(board);
+    reset(board, lst);
+    display_board(board);
+    redo(board, lst);
+    display_board(board);
+    validate(board);
+    hint(board, 1, 1);
+    autofill(board, lst);
+    display_board(board);
+    save(board, "save_file.txt");
+    edit(&board, "save_file.txt", &lst);
+    display_board(board);
+    generate(board, 5, 10, lst);
+    display_board(board);
+    exit_program(board, lst);
+    return 0;
 }

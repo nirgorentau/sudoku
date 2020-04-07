@@ -35,8 +35,8 @@ Board* new_board(int m, int n)
 
 void free_board(Board* board)
 {
-  if(board == NULL) return;
   int i, N;
+  if(board == NULL) return;
   N = get_N(board);
   for (i = 0; i < N; i++)
   {

@@ -37,7 +37,7 @@ int load_board(Board** board, char* path)
   Board* tboard;
   int i, j, m, n, N, v;
   char t;
-  char* s;
+  char s[1];
   FILE *f;
   f = fopen(path, "r");
   if (f == NULL) return 1;
@@ -50,7 +50,7 @@ int load_board(Board** board, char* path)
     for (j = 0; j < N; j++)
     {
       if(fscanf(f, "%d", &v)!=1) return load_failure(tboard);
-      if(v >= N || v < 0) return load_failure(tboard);
+      if(v > N || v < 0) return load_failure(tboard);
       cell_at(tboard, i, j)->value = v;
       if(fscanf(f, "%c", &t)!=0)
       {

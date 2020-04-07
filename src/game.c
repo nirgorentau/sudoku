@@ -2,6 +2,7 @@
 #include "file_io.h"
 #include "lp_solver.h"
 #include "deterministic_solver.h"
+
 int is_cell_value_valid(Board *board, int i, int j, Cell* cell) {
   Cell* temp;
   int k, block=get_block_index(board, i, j), N = get_N(board), val = cell->value;
@@ -53,10 +54,10 @@ static int is_board_legal(Board* board)
 static int are_fixed_cells_legal(Board* board)
 {
   int i, j, N, m, n;
+  Board* temp;
   N = get_N(board);
   m = board->m;
   n = board->n;
-  Board* temp;
   temp = new_board(m, n);
   for (i = 0; i < N; i++)
   {
@@ -124,7 +125,7 @@ int save(Board* board, char* filename)
   }
   else /* edit mode */
   {
-    if(!is_board_legal)
+    if(!is_board_legal(board))
     {
       return 1;
     }
@@ -147,7 +148,7 @@ int set(Board* board, int x, int y, int z, LinkedList* lst)
 {
   Cell* cell;
   Move* move;
-  int i, j, val, N, prev;
+  int i, j, N, prev;
   N = get_N(board);
   if(x < 1 || x > N || y < 1 || y > N)
   {
@@ -234,6 +235,7 @@ static int get_empty_cells(Cell** empty_cells, Board* board)
       }
     }
   }
+  return s;
 }
 
 /* Return a pointer to a random cell from the first N-i cells in <cells> and switch its position with cells[N-i-1] to avoid repetitions */
@@ -251,13 +253,14 @@ Cell* get_random_cell(Cell** cells, int N, int i)
 int get_random_valid_value(int* values, int N)
 {
   int i, j, s, res;
+  int* temp;
   s = 0;
   for ( i = 0; i < N; i++)
   {
     if(values[i] == 0) s++;
   }
   if(s == 0) return 0;
-  int* temp = malloc(sizeof(int) * s);
+  temp = malloc(sizeof(int) * s);
   if(temp == NULL)
   {
     printf("Memory allocation failed\n");
@@ -273,13 +276,14 @@ int get_random_valid_value(int* values, int N)
   return res;
 }
 
-/* Set <values>[i] to 1 if value i isn't valid for <cell>> */
-int set_invalid_values_for_cell(Board* board, Cell* cell, int* values)
+/* Set <values>[i] to 1 if value i isn't valid for the board[i][j] */
+int set_invalid_values_for_cell(Board* board, int i, int j, int* values)
 {
-  int i, j;
+  int k, block;
   Cell* temp;
   int N = get_N(board);
-  int k, block=get_block_index(board, i, j);
+  
+  block=get_block_index(board, i, j);
   for (k = 0; k < N; k++)
   {
     values[k] = 0;
@@ -345,6 +349,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   if(empty_cells_count < x) return 1;
   if(N*N - empty_cells_count + x < y) return 1;
   temp = new_board(m, n);
+  solved_board = new_board(m, n);
   cells = malloc(sizeof(Cell*)*empty_cells_count);
   if(cells == NULL)
   {
@@ -365,7 +370,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     for (i = 0; i < x; i++)
     {
       cell = get_random_cell(cells, empty_cells_count, i);
-      set_invalid_values_for_cell(temp, cell, values);
+      /*set_invalid_values_for_cell(temp, cell, values);*/ /* TODO: adjust to i, j */
       val = get_random_valid_value(values, N);
       if(val == 0)
       {
@@ -376,7 +381,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     }
     if(failed) continue; /* Try again in the next iteration */
 
-    if(integer_linear_solve(temp, &solved_board)) continue;
+    if(integer_linear_solve(temp, solved_board)) continue;
     else break;
   }
   free(values);
@@ -398,7 +403,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
 
   for ( i = 0; i < y; i++)
   {
-    cell = get_random_cell(cells, N, i);
+    cell = get_random_cell(cells, N*N, i);
     cell->value = 0;
   }
   /*TODO: fix all cells? */
@@ -418,14 +423,14 @@ int undo(Board* board, LinkedList* lst)
   count = lst->curr->move_count;
   if(count == 0) 
   {
-    /* No moves to undo */
+    printf("No moves to undo\n");
     return -1;
   }
   moves = lst->curr->m;
   for (k = count-1; k >= 0; k--)
   {
     cell_at(board, moves[k].i, moves[k].j)->value = moves[k].prev_value;
-    /*TODO: print change */
+    printf("Changed cell <%d,%d> from %d to %d\n", moves[k].i, moves[k].j, moves[k].curr_value, moves[k].prev_value);
   }
   set_valid_values(board);
   move_back(lst);
@@ -446,7 +451,7 @@ int redo(Board* board, LinkedList* lst)
   for (k = 0; k < count; k++)
   {
     cell_at(board, moves[k].i, moves[k].j)->value = moves[k].curr_value;
-    /*TODO: print change */
+    printf("Changed cell <%d,%d> from %d to %d\n", moves[k].i, moves[k].j, moves[k].prev_value, moves[k].curr_value);
   }
   set_valid_values(board);
   return 0;
@@ -464,8 +469,8 @@ int reset(Board* board, LinkedList* lst)
     {
       cell_at(board, moves[k].i, moves[k].j)->value = moves[k].prev_value;
     }
-    count = lst->curr->move_count;
     move_back(lst);
+    count = lst->curr->move_count;
   }
   set_valid_values(board);
   return 0;
@@ -475,22 +480,24 @@ int hint(Board* board, int x, int y)
 {
   Board* solved_board;
   int i, j;
+  int res;
   i = y-1;
   j = x-1;
-  if(!(board->mode == SOLVE_MODE)) return 1; //not in solve mode
-  if(!is_board_legal(board)) return 1; //erroneous
-  if(cell_at(board,i, j)->fixed) return 1; //cell is fixed
-  if(cell_at(board, i, j)->value != 0) return 1; //cell contains a value already
-  if(integer_linear_solve(board, &solved_board) == 1) return 1; //not solvable
-  printf("%d\n", cell_at(solved_board, i, j)->value);
+  if(!(board->mode == SOLVE_MODE)) return 1; /* not in solve mode */
+  if(!is_board_legal(board)) return 1; /* erroneous */
+  if(cell_at(board, i, j)->fixed) return 1; /* cell is fixed */
+  if(cell_at(board, i, j)->value != 0) return 1; /* cell contains a value already */
+  solved_board = new_board(board->m, board->n);
+  res = integer_linear_solve(board, solved_board);
+  if(res == 0) printf("hint: %d\n", cell_at(solved_board, i, j)->value);
   free_board(solved_board);
-  return 0;
+  return res;
 }
 
 int num_solutions(Board* board)
 {
-  if(board->mode == INIT_MODE) return 1; //invalid mode
-  if(!(is_board_legal(board))) return 1; //erroneous board
+  if(board->mode == INIT_MODE) return 1; /* invalid mode */
+  if(!(is_board_legal(board))) return 1; /* erroneous board */
   printf("%d\n", solution_count(board));
   return 0;
 }
@@ -502,7 +509,6 @@ static int obvious_value(Board* board, int i, int j)
   int* values;
   int res;
   int k;
-  Cell* temp;
   if(cell_at(board, i, j)->value != 0) return 0;
   N = get_N(board);
   values = malloc(sizeof(int)*N);
@@ -511,7 +517,7 @@ static int obvious_value(Board* board, int i, int j)
     printf("Memory allocation failed\n");
     exit(-1);
   }
-  set_invalid_values_for_cell(board, cell_at(board, i, j), values);
+  set_invalid_values_for_cell(board, i, j, values);
   /* check only one value is still available (0) and set res to it*/
   res = 0;
   for (k = 0; k < N; k++)
@@ -550,18 +556,21 @@ int autofill(Board* board, LinkedList* lst)
       }
     }
   }
-  if(counter) moves = new_move(counter);
-  k = 0;
-  for (i = 0; i < N; i++)
+  if(counter)
   {
-    for (j = 0; j < N; j++)
+    moves = new_move(counter);
+    k = 0;
+    for (i = 0; i < N; i++)
     {
-      if(obvious_value(temp, i, j))
+      for (j = 0; j < N; j++)
       {
-        set_move(moves, k, i, j, cell_at(board, i, j)->value, obvious_value(temp, i, j));
-        cell_at(board, i, j)->value = obvious_value(temp, i, j);
-        append_next(lst, moves, counter);
-        k++;
+        if(obvious_value(temp, i, j))
+        {
+          set_move(moves, k, i, j, cell_at(board, i, j)->value, obvious_value(temp, i, j));
+          cell_at(board, i, j)->value = obvious_value(temp, i, j);
+          append_next(lst, moves, counter);
+          k++;
+        }
       }
     }
   }
