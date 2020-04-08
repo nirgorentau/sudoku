@@ -7,6 +7,8 @@
 
 typedef struct Cell
 {
+  int i;
+  int j;
   int value;
   int fixed;
   int valid;

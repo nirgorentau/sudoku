@@ -2,6 +2,7 @@
 #include "file_io.h"
 #include "lp_solver.h"
 #include "deterministic_solver.h"
+#include "display_board.h"
 
 int is_cell_value_valid(Board *board, int i, int j, Cell* cell) {
   Cell* temp;
@@ -276,13 +277,14 @@ int get_random_valid_value(int* values, int N)
   return res;
 }
 
-/* Set <values>[i] to 1 if value i isn't valid for the board[i][j] */
-int set_invalid_values_for_cell(Board* board, int i, int j, int* values)
+/* Set <values>[i] to 1 if value i isn't valid for <cell> */
+int set_invalid_values_for_cell(Board* board, Cell* cell, int* values)
 {
-  int k, block;
+  int i, j, k, block;
   Cell* temp;
   int N = get_N(board);
-  
+  i = cell->i;
+  j = cell->j;
   block=get_block_index(board, i, j);
   for (k = 0; k < N; k++)
   {
@@ -370,7 +372,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     for (i = 0; i < x; i++)
     {
       cell = get_random_cell(cells, empty_cells_count, i);
-      /*set_invalid_values_for_cell(temp, cell, values);*/ /* TODO: adjust to i, j */
+      set_invalid_values_for_cell(temp, cell, values);
       val = get_random_valid_value(values, N);
       if(val == 0)
       {
@@ -380,8 +382,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
       else cell->value = val;
     }
     if(failed) continue; /* Try again in the next iteration */
-
-    if(integer_linear_solve(temp, solved_board)) continue;
+    if(integer_linear_solve(temp, solved_board) != 0) continue;
     else break;
   }
   free(values);
@@ -517,7 +518,7 @@ static int obvious_value(Board* board, int i, int j)
     printf("Memory allocation failed\n");
     exit(-1);
   }
-  set_invalid_values_for_cell(board, i, j, values);
+  set_invalid_values_for_cell(board, cell_at(board, i, j), values);
   /* check only one value is still available (0) and set res to it*/
   res = 0;
   for (k = 0; k < N; k++)

@@ -25,6 +25,8 @@ Board* new_board(int m, int n)
     board->matrix[i] = malloc(sizeof(Cell) * N);
     for (j = 0; j < N; j++)
     {
+      board->matrix[i][j].i = i;
+      board->matrix[i][j].j = j;
       board->matrix[i][j].value = 0;
       board->matrix[i][j].fixed = 0;
       board->matrix[i][j].valid = 1;
