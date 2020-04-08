@@ -117,7 +117,7 @@ int save(Board* board, char* filename)
 {
   if(board->mode == INIT_MODE)
   {
-    /* command not available in init mode */
+    printf("Command not available in init mode\n"); 
     return 1;
   }
   if(board->mode == SOLVE_MODE)
@@ -128,11 +128,12 @@ int save(Board* board, char* filename)
   {
     if(!is_board_legal(board))
     {
+      printf("The board is erroneous\n");
       return 1;
     }
     if(!is_solvable(board))
     {
-      /* board is not solveable */
+      printf("The board is not solveable\n");
       return 1; 
     }
     /* TODO: mark all non-empty cells as fixed (maybe copy) */
@@ -169,7 +170,7 @@ int set(Board* board, int x, int y, int z, LinkedList* lst)
   {
     if (cell->fixed == 1)
     {
-      /* trying to set a fixed cell */ 
+      printf("Trying to set a fixed cell in solve mode\n"); 
       return 1;
     }
   }
@@ -342,16 +343,33 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   Cell* cell;
   int* values;
   Move* moves;
-  if(!(board->mode == EDIT_MODE)) return 1;
-  if(!is_board_legal(board)) return 1;
+  if(!(board->mode == EDIT_MODE)) 
+  {
+    printf("Command not available in edit mode\n");
+    return 1;
+  }
+  if(!is_board_legal(board))
+  {
+    printf("The board is erroneous\n");
+    return 1;
+  } 
   n = board->n;
   m = board->m;
   N = get_N(board);
   empty_cells_count = count_empty_cells(board);
-  if(empty_cells_count < x) return 1;
-  if(N*N - empty_cells_count + x < y) return 1;
+  if(empty_cells_count < x) 
+  {
+    printf("Not enough empty cells to fill with random values\n");
+    return 1;
+  }
+  if(N*N < y)
+  {
+    printf("Can't empty more cells than the total amount cells in the board");
+    return 1;
+  } 
   temp = new_board(m, n);
   solved_board = new_board(m, n);
+  solved_board->mode = EDIT_MODE;
   cells = malloc(sizeof(Cell*)*empty_cells_count);
   if(cells == NULL)
   {
@@ -388,6 +406,12 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   free(values);
   free_board(temp);
   free(cells);
+  if(k == 1000)
+  {
+    printf("Failed to generate board");
+    free(solved_board);
+    return 1;
+  }
   cells = malloc(sizeof(Cell*) * N*N);
   if(cells == NULL)
   {
@@ -444,7 +468,7 @@ int redo(Board* board, LinkedList* lst)
   int k, count;
   if(move_forward(lst) == -1)
   {
-    /*No moves to redo */
+    printf("No moves to redo\n");
     return -1;
   }
   count = lst->curr->move_count;
@@ -484,13 +508,23 @@ int hint(Board* board, int x, int y)
   int res;
   i = y-1;
   j = x-1;
-  if(!(board->mode == SOLVE_MODE)) return 1; /* not in solve mode */
-  if(!is_board_legal(board)) return 1; /* erroneous */
+  if(!(board->mode == SOLVE_MODE)) 
+  {
+    printf("Command only available in solve mode\n");
+    return 1;
+  }
+  if(!is_board_legal(board))
+  {
+    printf("The board is erroneous");
+    return 1;
+  } 
+
   if(cell_at(board, i, j)->fixed) return 1; /* cell is fixed */
   if(cell_at(board, i, j)->value != 0) return 1; /* cell contains a value already */
   solved_board = new_board(board->m, board->n);
   res = integer_linear_solve(board, solved_board);
   if(res == 0) printf("hint: %d\n", cell_at(solved_board, i, j)->value);
+  else printf("The board is not solvable\n");
   free_board(solved_board);
   return res;
 }
@@ -499,7 +533,7 @@ int num_solutions(Board* board)
 {
   if(board->mode == INIT_MODE) return 1; /* invalid mode */
   if(!(is_board_legal(board))) return 1; /* erroneous board */
-  printf("%d\n", solution_count(board));
+  printf("Number of solutions: %d\n", solution_count(board));
   return 0;
 }
 
@@ -543,6 +577,16 @@ int autofill(Board* board, LinkedList* lst)
   Board* temp;
   int i, j, N, counter, k;
   Move* moves;
+  if(board->mode != SOLVE_MODE)
+  {
+    printf("Command only available in solve mode\n");
+    return 1;
+  }
+  if(!is_board_legal(board))
+  {
+    printf("The board is erroneous\n");
+    return 1;
+  }
   N = get_N(board);
   temp = new_board(board->m, board->n);
   copy_board(temp, board);
@@ -569,11 +613,11 @@ int autofill(Board* board, LinkedList* lst)
         {
           set_move(moves, k, i, j, cell_at(board, i, j)->value, obvious_value(temp, i, j));
           cell_at(board, i, j)->value = obvious_value(temp, i, j);
-          append_next(lst, moves, counter);
           k++;
         }
       }
     }
+    append_next(lst, moves, counter);
   }
   free_board(temp);
   return 0;
