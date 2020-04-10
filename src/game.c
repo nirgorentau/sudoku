@@ -359,12 +359,12 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   empty_cells_count = count_empty_cells(board);
   if(empty_cells_count < x) 
   {
-    printf("Not enough empty cells to fill with random values\n");
+    printf("X is too large, not enough empty cells to fill with random values\n");
     return 1;
   }
-  if(N*N < y)
+  if(N*N > y)
   {
-    printf("Can't empty more cells than the total amount cells in the board");
+    printf("Y can't be larger than the total amount cells in the board");
     return 1;
   } 
   temp = new_board(m, n);
@@ -426,7 +426,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     }
   }
 
-  for ( i = 0; i < y; i++)
+  for ( i = 0; i < N*N - y; i++)
   {
     cell = get_random_cell(cells, N*N, i);
     cell->value = 0;
