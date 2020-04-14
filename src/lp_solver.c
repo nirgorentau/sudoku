@@ -11,6 +11,61 @@
 #define BLOCK_CONST 3
 #define CELL_CONST 4
 
+
+Scores_matrix* new_scores_matrix(int N)
+{
+    int i, j;
+    Scores_matrix* scores_matrix = malloc(sizeof(Scores_matrix));
+    if(scores_matrix == NULL)
+    {
+        printf("Memory allocation failed\n");
+        exit(-1);
+    }
+    scores_matrix->matrix = malloc(sizeof(double*) * N);
+    if(scores_matrix->matrix == NULL)
+    {
+        printf("Memory allocation failed\n");
+        exit(-1);
+    }
+    for (i = 0; i < N; i++)
+    {
+        scores_matrix->matrix[i] = malloc(sizeof(double) * N);
+        if(scores_matrix->matrix[i] == NULL)
+        {
+            printf("Memory allocation failed\n");
+            exit(-1);
+        }   
+        for (j = 0; j < N; j++)
+        {
+            scores_matrix->matrix[i][j] = 0.0;
+        }
+    }
+  return scores_matrix;
+}
+
+void free_scores_matrix(Scores_matrix* scores_matrix)
+{
+    int i, N;
+    if(scores_matrix == NULL) return;
+    N = get_scores_matrix_N(scores_matrix);
+    for (i = 0; i < N; i++)
+    {
+        free(scores_matrix->matrix[i]);
+    }
+    free(scores_matrix->matrix);
+    free(scores_matrix);
+}
+
+int get_scores_matrix_N(Scores_matrix* scores_matrix)
+{
+    return scores_matrix->N;
+}
+
+double score_at(Scores_matrix* scores_matrix, int i, int j)
+{
+    return scores_matrix->matrix[i][j];
+}
+
 /* The variable that represents the value <val> for cell <x,y> is in cell (N^2*x +N*y + z-1)
  in the variable array for gurobi */
 int calc_index(int N, int x, int y, int val) {

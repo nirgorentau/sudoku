@@ -14,15 +14,30 @@ Board* new_board(int m, int n)
   int i, j, N;
   Board* board; 
   board = malloc(sizeof(Board));
+  if(board == NULL)
+    {
+        printf("Memory allocation failed\n");
+        exit(-1);
+    }
   N = m*n;
   board->m = m;
   board->n = n;
   board->mode = 0;
   board->mark_errors = 0;
   board->matrix = malloc(sizeof(Cell*) * N);
+  if(board->matrix == NULL)
+    {
+        printf("Memory allocation failed\n");
+        exit(-1);
+    }
   for (i = 0; i < N; i++)
   {
     board->matrix[i] = malloc(sizeof(Cell) * N);
+    if(board->matrix[i] == NULL)
+    {
+        printf("Memory allocation failed\n");
+        exit(-1);
+    }
     for (j = 0; j < N; j++)
     {
       board->matrix[i][j].i = i;

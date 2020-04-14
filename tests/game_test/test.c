@@ -7,7 +7,7 @@
 int main() {
     LinkedList* lst = NULL;
     Board* board = NULL;
-    Board* solved = new_board(3, 3);
+    /* Board* solved = new_board(3, 3); */
     solve(&board, "load_file.txt", &lst);
     display_board(board);
     printf("%d\n", lst->curr->move_count);
@@ -45,18 +45,10 @@ int main() {
     save(board, "save_file.txt");
     edit(&board, "save_file.txt", &lst);
     display_board(board);
-    generate(board, 5, 10, lst); /* erroneous due to integer_linear_solve not solving correctly */
+    generate(board, 5, 10, lst);
     display_board(board);
-
-    /* example of error */
-    solve(&board, "err_board.txt", &lst);
-    puts("loaded board: ");
+    undo(board, lst);
     display_board(board);
-    if(integer_linear_solve(board, solved) == 0)
-    {
-        puts("solved board: ");
-        display_board(solved);
-    }
     exit_program(board, lst);
     return 0;
 }

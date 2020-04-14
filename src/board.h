@@ -1,5 +1,6 @@
 #ifndef BOARD_H
 #define BOARD_H
+#include <stdio.h>
 
 #define INIT_MODE 0
 #define EDIT_MODE 1
