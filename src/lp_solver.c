@@ -431,3 +431,180 @@ int is_solvable(Board* b) {
     free_board(bin);
     return 1;
 }
+
+int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
+    GRBenv* env = NULL;
+    GRBmodel* model = NULL;
+    int err;
+    char* var_types = (char*) malloc(sizeof(int)*N*N*N);
+    double* sol = (double*) malloc(sizeof(double)*N*N*N);
+    double* in_use = (double*) malloc(sizeof(double)*N*N*N);
+    int num_in_use = 0;
+    int i, j, k;
+    char** var_names = (char**) malloc(sizeof(char*)*N*N*N);
+    double* ub = (double*) malloc(sizeof(double)*N*N*N);
+    for (i=0; i < N*N*N; i++) {
+        var_types[i] = GRB_CONTINUOUS;
+        in_use[i] = 0.0;
+        ub[i] = 1.0;
+    }
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            for (k = 1; k <= N; k++) {
+                if(cell_at(board, i, j)->value == 0 && is_valid(board, i, j, k)) {
+                    in_use[calc_index(N, i, j, k)] = 1.0;
+                    num_in_use++;
+                }
+                var_names[calc_index(N, i, j, k)] = format_name(VAR_NAME, i, j, k);
+            }
+        }
+    }
+
+    /* Gurobi init */
+    err = GRBloadenv(&env, "sol_log.log");
+    if (err) {
+        printf("Error code %d in GRBloadenv(): %s\n", err, GRBgeterrormsg(env));
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+
+    err = GRBsetintparam(env, GRB_INT_PAR_LOGTOCONSOLE, 0);
+    if (err) {
+        printf("Error code %d in GRBsetintparam(): %s\n", err, GRBgeterrormsg(env));
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+
+    err = GRBnewmodel(env, &model, "int_sol", 0, NULL, NULL, NULL, NULL, NULL);
+    if (err) {
+        printf("Error code %d in GRBnewmodel(): %s\n", err, GRBgeterrormsg(env));
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+
+    err = GRBaddvars(model, N*N*N, 0, NULL, NULL, NULL, in_use, NULL, ub, var_types, var_names);
+    if (err) {
+        printf("Error code %d in GRBaddvars(): %s\n", err, GRBgeterrormsg(env));
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+
+    err = GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE, GRB_MAXIMIZE);
+    if (err) {
+        printf("Error code %d in GRBsetintattr(): %s\n", err, GRBgeterrormsg(env));
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+
+    err = GRBupdatemodel(model);
+    if (err) {
+        printf("Error code %d in GRBupdatemodel(): %s\n", err, GRBgeterrormsg(env));
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+
+    /* Single value per cell */
+    if (set_constraints(CELL_CONST, env, model, board, in_use, N)) {
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+
+    /* Single value per row */
+    if (set_constraints(ROW_CONST, env, model, board, in_use, N) == -1) {
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+    
+    /* Single value per column */
+    if (set_constraints(COL_CONST, env, model, board, in_use, N) == -1) {
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+
+    /* Single value per block */
+    if (set_constraints(BLOCK_CONST, env, model, board, in_use, N) == -1) {
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+
+    err = GRBoptimize(model);
+    if (err) {
+        printf("Error code %d in GRBOptimize(): %s\n", err, GRBgeterrormsg(env));
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+
+    /* For testing - review that model is correct */
+    err = GRBwrite(model, "int_sol.lp");
+    if (err) {
+        printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
+        free(in_use);
+        free(var_types);
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return -1;
+    }
+    free(in_use);
+    free(var_types);
+    err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, N*N*N, sol);
+    if (err) {
+        printf("Error code %d in GRBgetdblattrarray(): %s\n", err, GRBgeterrormsg(env));
+        return -1;
+    }
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            for (k=0; k < N; k++) {
+                scores_matrices[k]->matrix[i][j] = sol[calc_index(N, i, j, k+1)];
+            }
+        }
+    }
+    free(sol);
+    GRBfreemodel(model);
+    GRBfreeenv(env);
+    return 0;
+}
