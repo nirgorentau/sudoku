@@ -455,7 +455,7 @@ int undo(Board* board, LinkedList* lst)
   for (k = count-1; k >= 0; k--)
   {
     cell_at(board, moves[k].i, moves[k].j)->value = moves[k].prev_value;
-    printf("Changed cell <%d,%d> from %d to %d\n", moves[k].i, moves[k].j, moves[k].curr_value, moves[k].prev_value);
+    printf("Changed cell <%d,%d> from %d to %d\n", moves[k].j+1, moves[k].i+1, moves[k].curr_value, moves[k].prev_value);
   }
   set_valid_values(board);
   move_back(lst);
@@ -476,7 +476,7 @@ int redo(Board* board, LinkedList* lst)
   for (k = 0; k < count; k++)
   {
     cell_at(board, moves[k].i, moves[k].j)->value = moves[k].curr_value;
-    printf("Changed cell <%d,%d> from %d to %d\n", moves[k].i, moves[k].j, moves[k].prev_value, moves[k].curr_value);
+    printf("Changed cell <%d,%d> from %d to %d\n",  moves[k].j+1, moves[k].i+1, moves[k].prev_value, moves[k].curr_value);
   }
   set_valid_values(board);
   return 0;
