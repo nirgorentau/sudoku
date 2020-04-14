@@ -31,8 +31,8 @@ int integer_linear_solve(Board* board, Board* res);
 /* Return 1 if the board is solvable, 0 otherwise */
 int is_solvable(Board* board);
 
-/* Solve <board> using LP and store the results in an array of Scores matrices
-such that scores_matrices[k][i][j] is the score of setting board[i][j] value to k+1 */
-int linear_solve(Board* board, Scores_matrix* scores_matrices, int N);
+/* Solve <board> using LP and store the results in an array of Scores matrix pointers
+such that score_at(scores_matrices[k], i, j) is the score of setting board[i][j] value to k+1 */
+int linear_solve(Board* board, Scores_matrix** scores_matrices, int N);
 
 #endif
