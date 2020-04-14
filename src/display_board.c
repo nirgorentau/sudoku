@@ -20,7 +20,7 @@ void print_cell(Board* board, int i, int j)
   val = cell->value;
   if(val != 0) printf("%2d", val);
   else printf("  ");
-  if(cell->fixed) printf(".");
+  if(board->mode == SOLVE_MODE && cell->fixed) printf(".");
   else
   {
     /*if erroneous and board is in edit more or mark errors set to 1 */

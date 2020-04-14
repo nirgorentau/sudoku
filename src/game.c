@@ -4,9 +4,15 @@
 #include "deterministic_solver.h"
 #include "display_board.h"
 
-int is_cell_value_valid(Board *board, int i, int j, Cell* cell) {
+int is_cell_value_valid(Board *board, Cell* cell) {
   Cell* temp;
-  int k, block=get_block_index(board, i, j), N = get_N(board), val = cell->value;
+  int i, j, N, val;
+  int k, block;
+  i = cell->i;
+  j = cell->j;
+  block=get_block_index(board, i, j);
+  N = get_N(board);
+  val = cell->value;
   if (val == 0) return 1;
   for (k = 0; k < N; k++) {
     temp = cell_at(board, i, k);
@@ -29,7 +35,7 @@ static int set_valid_values(Board* board)
     for (j = 0; j < N; j++)
     {
       cell = cell_at(board, i, j);
-      cell->valid = is_cell_value_valid(board, i, j, cell);
+      cell->valid = is_cell_value_valid(board, cell);
     }
   }
   return 0;
@@ -620,6 +626,201 @@ int autofill(Board* board, LinkedList* lst)
     append_next(lst, moves, counter);
   }
   free_board(temp);
+  set_valid_values(board);
+  return 0;
+}
+
+/* Fill <board> with obvious values (one pass, correctness guarenteed)
+maybe not needed */
+/* static int autofill_board(Board* board)
+{
+  Board* temp;
+  int i, j, N;
+  N = get_N(board);
+  for (i = 0; i < N; i++)
+    {
+      for (j = 0; j < N; j++)
+      {
+        if(obvious_value(board, i, j))
+        {
+          cell_at(board, i, j)->value = obvious_value(board, i, j);
+        }
+      }
+    }
+  set_valid_values(board);
+  return 0;
+} */
+
+static Scores_matrix** new_scores_matrices(int N)
+{
+  Scores_matrix** scores_matrices;
+  int i;
+  scores_matrices = malloc(sizeof(Scores_matrix*) * N);
+  if(scores_matrices == NULL)
+  {
+    printf("Memory allocation failed\n");
+    exit(-1);
+  }
+  for (i = 0; i < N; i++)
+  {
+    scores_matrices[i] = new_scores_matrix(N);
+  }
+  return scores_matrices;
+}
+
+static void free_scores_matrices(Scores_matrix** scores_matrices, int N)
+{
+  int i;
+  for (i = 0; i < N; i++)
+  {
+    free(scores_matrices[i]);
+  }
+  free(scores_matrices);
+}
+
+int guess_hint(Board* board, int x, int y)
+{
+  int i, j, k, N;
+  Board* temp;
+  Scores_matrix** scores_matrices;
+    N = get_N(board);
+  if(board->mode != SOLVE_MODE)
+  {
+    printf("Command only available in SOLVE mode\n");
+    return 1;
+  }
+  if(x < 1 || x > N || y < 1 || y > N)
+  {
+    /* invalid cell cooridinates */
+    return 1;
+  }
+  i = y-1;
+  j = x-1;
+  if(!is_board_legal(board))
+  {
+    printf("The board is erroneous\n");
+    return 1;
+  }
+  if(cell_at(board, i, j)->fixed)
+  {
+    printf("The cell is fixed\n");
+    return 1;
+  }
+  if(cell_at(board, i, j)->value != 0)
+  {
+    printf("The cell already contains a value\n");
+    return 1;
+  }
+
+  temp = new_board(board->m, board->n);
+  copy_board(temp, board);
+  scores_matrices = new_scores_matrices(N);
+  linear_solve(temp, scores_matrices, N);
+  for (k = 0; k < N; k++)
+  {
+    if(score_at(scores_matrices[k], i, j) > 0.0)
+    {
+      printf("Score for value %d: %f\n", k+1, score_at(scores_matrices[k], i, j));
+    }
+  }
+  free(temp);
+  free_scores_matrices(scores_matrices, N);
+  return 0;
+}
+
+int choose_random_value(int* values, double* scores, double sum, int size)
+{
+  int i;
+  double random_double;
+  random_double = ((double)(rand())/RAND_MAX) * sum;
+  for ( i = 0; i < size; i++)
+  {
+    if(random_double < scores[i]) return values[i];
+  }
+
+  return 0;
+  
+}
+
+int guess(Board* board, float x, LinkedList* lst)
+{
+  int i, j, k, l, N, old_value;
+  double* scores_vector;
+  double scores_sum;
+  int* values_vector;
+  Board* temp;
+  Move* moves;
+  int move_count;
+  Cell* cell;
+  int candidate;
+  Scores_matrix** scores_matrices;
+  if(x < 0.0 || x > 1.0)
+  {
+    printf("Invalid value for x\n");
+    return 1;
+  }
+  N = get_N(board);
+  if(board->mode != SOLVE_MODE)
+  {
+    printf("Command only available in SOLVE mode\n");
+    return 1;
+  }
+  if(!is_board_legal(board))
+  {
+    printf("The board is erroneous\n");
+    return 1;
+  }
+  temp = new_board(board->m, board->n);
+  copy_board(temp, board);
+  scores_matrices = new_scores_matrices(N);
+  linear_solve(temp, scores_matrices, N);
+  for ( i = 0; i < N; i++)
+  {
+    for ( j = 0; j < N; j++)
+    {
+      l = 0;
+      scores_sum = 0.0;
+      scores_vector = calloc(N, sizeof(double));
+      values_vector = calloc(N, sizeof(int));
+      if(scores_vector == NULL || values_vector == NULL)
+      {
+        printf("Memory allocation failed\n");
+        return 1;
+      }
+      for ( k = 0; k < N; k++)
+      {
+        if(score_at(scores_matrices[k], i, j) > x)
+        {
+            values_vector[l] = k+1;
+            scores_sum += score_at(scores_matrices[k], i, j);
+            scores_vector[l] = scores_sum;
+            l++;
+        }
+      }
+      if(l>0)
+      {
+        candidate = choose_random_value(values_vector, scores_vector, scores_sum, l);
+        cell = cell_at(board, i, j);
+        old_value = cell->value;
+        cell->value = candidate;
+        if(!is_cell_value_valid(board, cell))
+        {
+          cell->value = old_value;
+        }
+      }
+      free(scores_vector);
+      free(values_vector);
+    }
+    
+  }
+  set_valid_values(board);
+  move_count = get_moves(temp, board, &moves);
+  if(move_count)
+  {
+    append_next(lst, moves, move_count);
+  }
+  free(temp);
+  free_scores_matrices(scores_matrices, N);
   return 0;
 }
 

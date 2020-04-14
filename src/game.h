@@ -5,7 +5,7 @@
 #include "board.h"
 
 /*Check whether the value of the cell is valid*/
-int is_cell_value_valid(Board *b, int i, int j, Cell* cell);
+int is_cell_value_valid(Board *b, Cell* cell);
 
 /*Start a puzzle in solve mode*/
 int solve(Board** board, char* filename, LinkedList** lst);
