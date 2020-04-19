@@ -6,10 +6,21 @@ static int load_ints(int* target, int count) {
     for (iter = 0; iter < count; iter++) {
         tmp = strtok(NULL, " \t\r\n");
         if (tmp == NULL) {
+            printf("Missing parameters: Expected %d, got %d\n", count, iter);
             return CMD_ERR;
+        }
+        if ((strcmp(tmp, "0") != 0) && (atoi(tmp) == 0)) {
+          printf("Invalid parameter: '%s' is not an integer\n", tmp);
+          return CMD_ERR;
         }
         target[iter] = atoi(tmp);
     }
+    /* Checking to see we don't have too many parameters */
+    tmp = strtok(NULL, " \t\r\n");
+        if (tmp != NULL) {
+          printf("Too many parameters: command accepts only %d parameter(s)\n", count);
+          return CMD_ERR;
+        }
     return CMD_SUCCESS;
 }
 
@@ -17,8 +28,24 @@ static int load_float(float* target)
 {
   char* tmp;
   tmp = strtok(NULL, " \t\r\n");
-  if(tmp == NULL) return CMD_ERR;
+  if(tmp == NULL)
+  {
+    printf("Missing parameters: Expected 1, got 0\n");
+    return CMD_ERR;
+  }
+  if (atof(tmp) == 0)
+  {
+    printf("Invalid parameter: '%s' is not a number\n", tmp);
+    return CMD_ERR;
+  }
   *target = atof(tmp);
+  /* Checking to see we have only 1 parameter */
+  tmp = strtok(NULL, " \t\r\n");
+  if(tmp != NULL)
+  {
+    printf("Too many parameters: command accepts only 1 parameter\n");
+    return CMD_ERR;
+  }
   return CMD_SUCCESS;
 }
 
@@ -44,19 +71,22 @@ int read_command(Board** board, LinkedList** lst)
     if (strcmp(cmd, "solve") == 0)
     {
       filename = load_filename();
+      if (filename == NULL) {
+        printf("Missing parameters: Expected 1, got 0\n");
+      }
       solve(board, filename, lst);
     }
-    if (strcmp(cmd, "edit") == 0)
+    else if (strcmp(cmd, "edit") == 0)
     {
       filename = load_filename();
       edit(board, filename, lst);
     }
-    if (strcmp(cmd, "save") == 0)
+    else if (strcmp(cmd, "save") == 0)
     {
       filename = load_filename();
       save(*board, filename);
     }
-    if (strcmp(cmd, "mark_errors") == 0)
+    else if (strcmp(cmd, "mark_errors") == 0)
     {
       if (load_ints(values, 1) == CMD_ERR) return CMD_ERR;
       mark_errors(*board, values[0]);
@@ -78,7 +108,7 @@ int read_command(Board** board, LinkedList** lst)
     else if (strcmp(cmd, "guess_hint") == 0)
     {
       if (load_ints(values, 2) == CMD_ERR) return CMD_ERR;
-      guess_hint(*board, values[0], values[1]);
+      if (guess_hint(*board, values[0], values[1])) return CMD_ERR;
     }
     else if (strcmp(cmd, "validate") == 0)
     {
@@ -109,10 +139,19 @@ int read_command(Board** board, LinkedList** lst)
     else if (strcmp(cmd, "redo") == 0)
     {
       redo(*board, *lst);
-    }
+    } 
     else if (strcmp(cmd, "reset") == 0)
     {
       reset(*board, *lst);
+    } else if (strcmp(cmd, "print_board") == 0) {
+      if ((*board)->mode == INIT_MODE) {
+        printf("Command not available in init mode\n");
+        return CMD_ERR;
+      }
+      display_board(*board);
+    } else {
+      printf("Invalid command\n");
+      return CMD_ERR;
     }
     return CMD_SUCCESS;
 }

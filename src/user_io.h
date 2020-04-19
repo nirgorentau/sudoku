@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "game.h"
+#include "display_board.h"
 
 int read_command(Board** board, LinkedList** lst);
 
