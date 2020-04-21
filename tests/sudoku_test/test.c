@@ -1,5 +1,4 @@
 #include "user_io.h"
-#include "display_board.h"
 int main() {
     LinkedList* lst = NULL;
     Board* board = new_board(1, 1);
