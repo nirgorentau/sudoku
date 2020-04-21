@@ -500,7 +500,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   free(cells);
   copy_board(board, solved_board);
   set_valid_values(board);
-  free(solved_board);
+  free_board(solved_board);
   return 0;
 }
 
@@ -611,8 +611,16 @@ int hint(Board* board, int x, int y)
     return 1;
   } 
 
-  if(cell_at(board, i, j)->fixed) return 1; /* cell is fixed */
-  if(cell_at(board, i, j)->value != 0) return 1; /* cell contains a value already */
+  if(cell_at(board, i, j)->fixed)
+  {
+    printf("The cell is fixed\n");
+    return 1;
+  } 
+  if(cell_at(board, i, j)->value != 0)
+  {
+    printf("The cell already contains a value\n");
+    return 1;
+  } 
   solved_board = new_board(board->m, board->n);
   res = integer_linear_solve(board, solved_board);
   if(res == 0) printf("hint: %d\n", cell_at(solved_board, i, j)->value);
