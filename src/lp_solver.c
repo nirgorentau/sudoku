@@ -214,7 +214,7 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
                 err = 0;
             }
             if (err) {
-                if (type == CELL_CONST) {
+                /* if (type == CELL_CONST) {
                     printf("Error code %d in GRBaddconstr() for cell (%d, %d): %s\n", err, i, j, GRBgeterrormsg(env));
                 } else if (type == ROW_CONST) {
                     printf("Error code %d in GRBaddconstr() for row %d, value %d: %s\n", err, i, j, GRBgeterrormsg(env));
@@ -222,7 +222,7 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
                     printf("Error code %d in GRBaddconstr() for column %d, value %d: %s\n", err, i, j, GRBgeterrormsg(env));
                 } else {
                     printf("Error code %d in GRBaddconstr() for block %d, value %d: %s\n", err, i, j, GRBgeterrormsg(env));
-                } 
+                }  */
                 free(const_ind);
                 free(constraints);
                 return -1;
@@ -233,6 +233,15 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
     free(const_ind);
     free(constraints);
     return 0;
+}
+
+void free_resources(GRBenv* env, GRBmodel* model, char* var_names, double* sol, char* var_types, double* in_use, int N) {
+        free(in_use);
+        free(var_types);
+        free(sol);
+        free_names(&var_names, N);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
 }
 
 /* TODO: Code cleanup */
@@ -268,154 +277,89 @@ int integer_linear_solve(Board* b, Board* res) {
     /* Gurobi init */
     err = GRBloadenv(&env, "sol_log.log");
     if (err) {
-        printf("Error code %d in GRBloadenv(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        /* printf("Error code %d in GRBloadenv(): %s\n", err, GRBgeterrormsg(env)); */
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBsetintparam(env, GRB_INT_PAR_LOGTOCONSOLE, 0);
     if (err) {
-        printf("Error code %d in GRBsetintparam(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        /* printf("Error code %d in GRBsetintparam(): %s\n", err, GRBgeterrormsg(env)); */
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBnewmodel(env, &model, "int_sol", 0, NULL, NULL, NULL, NULL, NULL);
     if (err) {
-        printf("Error code %d in GRBnewmodel(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        /* printf("Error code %d in GRBnewmodel(): %s\n", err, GRBgeterrormsg(env)); */
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBaddvars(model, N*N*N, 0, NULL, NULL, NULL, in_use, NULL, NULL, var_types, var_names);
     if (err) {
-        printf("Error code %d in GRBaddvars(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        /* printf("Error code %d in GRBaddvars(): %s\n", err, GRBgeterrormsg(env)); */
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE, GRB_MAXIMIZE);
     if (err) {
-        printf("Error code %d in GRBsetintattr(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        /* printf("Error code %d in GRBsetintattr(): %s\n", err, GRBgeterrormsg(env)); */
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBupdatemodel(model);
     if (err) {
-        printf("Error code %d in GRBupdatemodel(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        /* printf("Error code %d in GRBupdatemodel(): %s\n", err, GRBgeterrormsg(env)); */
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     /* Single value per cell */
     if (set_constraints(CELL_CONST, env, model, b, in_use, N)) {
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     /* Single value per row */
     if (set_constraints(ROW_CONST, env, model, b, in_use, N) == -1) {
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
     
     /* Single value per column */
     if (set_constraints(COL_CONST, env, model, b, in_use, N) == -1) {
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     /* Single value per block */
     if (set_constraints(BLOCK_CONST, env, model, b, in_use, N) == -1) {
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBoptimize(model);
     if (err) {
-        printf("Error code %d in GRBOptimize(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        /* printf("Error code %d in GRBOptimize(): %s\n", err, GRBgeterrormsg(env)); */
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     /* For testing - review that model is correct */
     err = GRBwrite(model, "int_sol.lp");
     if (err) {
-        printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        /* printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env)); */
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &solveable);
     if (err) {
-        printf("Error code %d in GRBgetintattr(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        /* printf("Error code %d in GRBgetintattr(): %s\n", err, GRBgeterrormsg(env)); */
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
     free(in_use);
@@ -424,7 +368,10 @@ int integer_linear_solve(Board* b, Board* res) {
     if (solveable == GRB_OPTIMAL) {
         err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, N*N*N, sol);
         if (err) {
-            printf("Error code %d in GRBgetdblattrarray(): %s\n", err, GRBgeterrormsg(env));
+            /* printf("Error code %d in GRBgetdblattrarray(): %s\n", err, GRBgeterrormsg(env)); */
+            free(sol);
+            GRBfreemodel(model);
+            GRBfreeenv(env);
             return -1;
         }
         for (i = 0; i < N; i++) {
@@ -448,7 +395,6 @@ int integer_linear_solve(Board* b, Board* res) {
     } else {
         /* Unsolveable */
         free(sol);
-    return 0;
         GRBfreemodel(model);
         GRBfreeenv(env);
         return 1;
@@ -495,140 +441,85 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     /* Gurobi init */
     err = GRBloadenv(&env, "sol_log.log");
     if (err) {
-        printf("Error code %d in GRBloadenv(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
+        /* printf("Error code %d in GRBloadenv(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBsetintparam(env, GRB_INT_PAR_LOGTOCONSOLE, 0);
     if (err) {
-        printf("Error code %d in GRBsetintparam(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
+        /* printf("Error code %d in GRBsetintparam(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBnewmodel(env, &model, "int_sol", 0, NULL, NULL, NULL, NULL, NULL);
     if (err) {
-        printf("Error code %d in GRBnewmodel(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
+        /* printf("Error code %d in GRBnewmodel(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBaddvars(model, N*N*N, 0, NULL, NULL, NULL, in_use, NULL, ub, var_types, var_names);
     if (err) {
-        printf("Error code %d in GRBaddvars(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
+        /* printf("Error code %d in GRBaddvars(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE, GRB_MAXIMIZE);
     if (err) {
-        printf("Error code %d in GRBsetintattr(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
+        /* printf("Error code %d in GRBsetintattr(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBupdatemodel(model);
     if (err) {
-        printf("Error code %d in GRBupdatemodel(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
+        /* printf("Error code %d in GRBupdatemodel(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     /* Single value per cell */
     if (set_constraints(CELL_CONST, env, model, board, in_use, N)) {
-        free(in_use);
-        free(var_types);
-        free(sol);
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     /* Single value per row */
     if (set_constraints(ROW_CONST, env, model, board, in_use, N) == -1) {
-        free(in_use);
-        free(var_types);
-        free(sol);
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
     
     /* Single value per column */
     if (set_constraints(COL_CONST, env, model, board, in_use, N) == -1) {
-        free(in_use);
-        free(var_types);
-        free(sol);
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     /* Single value per block */
     if (set_constraints(BLOCK_CONST, env, model, board, in_use, N) == -1) {
-        free(in_use);
-        free(var_types);
-        free(sol);
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
     err = GRBoptimize(model);
     if (err) {
         printf("Error code %d in GRBOptimize(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
@@ -636,13 +527,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     err = GRBwrite(model, "int_sol.lp");
     if (err) {
         printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
-        free(in_use);
-        free(var_types);
-        free(sol);
         free(ub);
-        free_names(&var_names, N);
-        GRBfreemodel(model);
-        GRBfreeenv(env);
+        free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
     free(in_use);
@@ -652,6 +538,9 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, N*N*N, sol);
     if (err) {
         printf("Error code %d in GRBgetdblattrarray(): %s\n", err, GRBgeterrormsg(env));
+        free(sol);
+        GRBfreemodel(model);
+        GRBfreeenv(env);
         return -1;
     }
     for (i = 0; i < N; i++) {
