@@ -280,9 +280,17 @@ int read_command(Board** board, LinkedList** lst)
       printf("Invalid command\n");
       return CMD_ERR;
     }
-    if (is_board_solved(*board)) {
-      printf("Board solved!\n");
-      (*board)->mode = INIT_MODE;
+    if((*board)->mode == SOLVE_MODE)
+    {
+      if (is_board_full(*board)) 
+      {
+        if(is_board_solved(*board))
+        {
+          printf("Board solved!\n");
+          (*board)->mode = INIT_MODE;
+        }
+        else printf("The solution is erroneous\n");
+      }
     }
     return CMD_SUCCESS;
 }

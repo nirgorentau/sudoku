@@ -2,7 +2,8 @@
 #include "display_board.h"
 int main() {
     LinkedList* lst = NULL;
-    Board* board = NULL;
+    Board* board = new_board(1, 1);
+    board->mode = INIT_MODE;
     while(read_command(&board, &lst) != CMD_EXIT)
     {
     }
