@@ -275,7 +275,7 @@ int integer_linear_solve(Board* b, Board* res) {
     }
 
     /* Gurobi init */
-    err = GRBloadenv(&env, "sol_log.log");
+    err = GRBloadenv(&env, NULL);
     if (err) {
         /* printf("Error code %d in GRBloadenv(): %s\n", err, GRBgeterrormsg(env)); */
         free_resources(env, model, var_names, sol, var_types, in_use, N);
@@ -440,7 +440,7 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     }
 
     /* Gurobi init */
-    err = GRBloadenv(&env, "sol_log.log");
+    err = GRBloadenv(&env, NULL);
     if (err) {
         /* printf("Error code %d in GRBloadenv(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
