@@ -111,9 +111,14 @@ static int are_fixed_cells_legal(Board* board)
 int solve(Board** board, char* filename, LinkedList** lst)
 {
   Board* temp;
-  if(load_board(&temp, filename)!=0 || are_fixed_cells_legal(temp) != 1) 
+  if(load_board(&temp, filename)!=0) 
   {
-    printf("Not a valid input file\n");
+    printf("Error loading file %s\n", filename);
+    return 1;
+  }
+  if(are_fixed_cells_legal(temp) != 1)
+  {
+    printf("Invalid file format: %s\n", filename);
     return 1;
   }
   set_valid_values(temp);
@@ -144,7 +149,7 @@ int edit(Board** board, char* filename, LinkedList** lst)
   Board* temp;
   if(load_board(&temp, filename)!=0)
   {
-    printf("Not a valid input file\n");
+    printf("Error loading file %s\n", filename);
     return 1;
   }
   set_valid_values(temp);
@@ -188,11 +193,11 @@ int save(Board* board, char* filename)
 
 void mark_errors(Board* board, int val)
 {
-  if(board->mode != SOLVE_MODE)
-  {
-    printf("Command only available in solve mode\n");
+  if (board->mode != SOLVE_MODE) {
+    printf("Command only available in solve mode\n"); 
+  } else {
+    board->mark_errors = val;
   }
-  board->mark_errors = val;
 }
 
 int set(Board* board, int x, int y, int z, LinkedList* lst)
@@ -200,15 +205,21 @@ int set(Board* board, int x, int y, int z, LinkedList* lst)
   Cell* cell;
   Move* move;
   int i, j, N, prev;
+  if (board->mode == INIT_MODE) {
+    printf("Command not available in init mode\n"); 
+    return 1;
+  }
   N = get_N(board);
   if(x < 1 || x > N || y < 1 || y > N)
   {
   /* invalid cell cooridinates */
+  printf("Invalid parameters: Coordinates out of range (1-%d)\n", N);
   return 1;
   }
   if(z < 0 || z > N)
   {
   /* invalid value */
+  printf("Invalid parameters: Cell value out of range (0-%d)\n", N);
   return 1;
   }
   i = y-1;
@@ -233,9 +244,8 @@ int set(Board* board, int x, int y, int z, LinkedList* lst)
 
 int validate(Board* board)
 {
-  if(board->mode == INIT_MODE)
-  {
-    printf("Command only available in edit mode or solve mode\n");
+  if (board->mode == INIT_MODE) {
+    printf("Command not available in init mode\n"); 
     return 1;
   }
   if(!is_board_legal(board))
@@ -504,6 +514,10 @@ int undo(Board* board, LinkedList* lst)
     return 1;
   }
   count = lst->curr->move_count;
+  if (board->mode == INIT_MODE) {
+    printf("Command not available in init mode\n"); 
+    return 1;
+  }
   if(count == 0) 
   {
     printf("No moves to undo\n");
@@ -524,9 +538,8 @@ int redo(Board* board, LinkedList* lst)
 {
   Move* moves;
   int k, count;
-  if(board->mode == INIT_MODE)
-  {
-    printf("Command not only available in edit mode or solve mode\n"); 
+  if (board->mode == INIT_MODE) {
+    printf("Command not available in init mode\n"); 
     return 1;
   }
   if(move_forward(lst) == -1)
@@ -549,6 +562,10 @@ int reset(Board* board, LinkedList* lst)
 {
   Move* moves;
   int k, count;
+  if (board->mode == INIT_MODE) {
+    printf("Command not available in init mode\n"); 
+    return 1;
+  }
   count = lst->curr->move_count;
   if(board->mode == INIT_MODE)
   {
@@ -599,12 +616,16 @@ int hint(Board* board, int x, int y)
 
 int num_solutions(Board* board)
 {
-  if(board->mode == INIT_MODE)
+  if (board->mode == INIT_MODE) /* invalid mode */
   {
-    printf("Command not only available in edit mode or solve mode\n"); 
+    printf("Command not available in init mode\n"); 
     return 1;
   }
-  if(!(is_board_legal(board))) return 1; /* TODO erroneous board */
+  if(!is_board_legal(board)) /* erroneous board */
+  {
+    printf("The board is erroneous");
+    return 1;
+  }
   printf("Number of solutions: %d\n", solution_count(board));
   return 0;
 }
@@ -737,6 +758,7 @@ int guess_hint(Board* board, int x, int y)
   if(x < 1 || x > N || y < 1 || y > N)
   {
     /* invalid cell cooridinates */
+    printf("Invalid parameters: Coordinates out of range (1-%d)\n", N);
     return 1;
   }
   i = y-1;
@@ -799,14 +821,13 @@ int guess(Board* board, float x, LinkedList* lst)
   Cell* cell;
   int candidate;
   Scores_matrix** scores_matrices;
-  if(board->mode != SOLVE_MODE)
-  {
-    printf("Command only available in solve mode\n");
+  if (board->mode != SOLVE_MODE) {
+    printf("Command only available in solve mode\n"); 
     return 1;
   }
   if(x < 0.0 || x > 1.0)
   {
-    printf("Invalid value for x\n");
+    printf("Invalid parameter: Threshold out of range (0.0-1.0)\n");
     return 1;
   }
   N = get_N(board);
