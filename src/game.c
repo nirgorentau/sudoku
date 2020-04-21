@@ -472,7 +472,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   free(cells);
   if(k == 1000)
   {
-    printf("Failed to generate board");
+    printf("Failed to generate board\n");
     free(solved_board);
     return 1;
   }
@@ -589,15 +589,22 @@ int reset(Board* board, LinkedList* lst)
 int hint(Board* board, int x, int y)
 {
   Board* solved_board;
-  int i, j;
+  int i, j, N;
   int res;
-  i = y-1;
-  j = x-1;
   if(!(board->mode == SOLVE_MODE)) 
   {
     printf("Command only available in solve mode\n");
     return 1;
   }
+  N = get_N(board);
+  if(x < 1 || x > N || y < 1 || y > N)
+  {
+  /* invalid cell cooridinates */
+  printf("Invalid parameters: Coordinates out of range (1-%d)\n", N);
+  return 1;
+  }
+  i = y-1;
+  j = x-1;
   if(!is_board_legal(board))
   {
     printf("The board is erroneous");
