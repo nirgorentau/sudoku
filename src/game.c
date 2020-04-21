@@ -4,6 +4,45 @@
 #include "deterministic_solver.h"
 #include "display_board.h"
 
+/* TODO move some functions to game_util.c
+probably move mode checks to user_io */
+
+int is_board_full(Board* board)
+{
+  int i, j, N;
+  N = get_N(board);
+  for ( i = 0; i < N; i++)
+  {
+    for ( j = 0; j < N; j++)
+    {
+      if(cell_at(board, i, j)->value == 0) return 0;
+    }
+  }
+  return 1;
+}
+
+int is_board_legal(Board* board)
+{
+  int i, j, N;
+  N = get_N(board);
+  for (i = 0; i < N; i++)
+  {
+    for (j = 0; j < N; j++)
+    {
+      if(cell_at(board, i, j)->valid == 0)
+      {
+        return 0;
+      }
+    }
+  }
+  return 1;
+}
+
+int is_board_solved(Board* board)
+{
+  return (is_board_full(board) && is_board_legal(board));
+}
+
 int is_cell_value_valid(Board *board, Cell* cell) {
   Cell* temp;
   int i, j, N, val;
@@ -41,23 +80,6 @@ static int set_valid_values(Board* board)
   return 0;
 }
 
-static int is_board_legal(Board* board)
-{
-  int i, j, N;
-  N = get_N(board);
-  for (i = 0; i < N; i++)
-  {
-    for (j = 0; j < N; j++)
-    {
-      if(cell_at(board, i, j)->valid == 0)
-      {
-        return 0;
-      }
-    }
-  }
-  return 1;
-}
-
 static int are_fixed_cells_legal(Board* board)
 {
   int i, j, N, m, n;
@@ -89,8 +111,11 @@ static int are_fixed_cells_legal(Board* board)
 int solve(Board** board, char* filename, LinkedList** lst)
 {
   Board* temp;
-  if(load_board(&temp, filename)!=0) return 1;
-  if(are_fixed_cells_legal(temp) != 1) return 1;
+  if(load_board(&temp, filename)!=0 || are_fixed_cells_legal(temp) != 1) 
+  {
+    printf("Not a valid input file\n");
+    return 1;
+  }
   set_valid_values(temp);
   free_board(*board);
   *board = new_board(temp->m, temp->n);
@@ -103,10 +128,25 @@ int solve(Board** board, char* filename, LinkedList** lst)
   return 0;
 }
 
+int edit_default(Board** board, LinkedList** lst)
+{
+  free_board(*board);
+  *board = new_board(3, 3);
+  (*board)->mode = EDIT_MODE;
+  /* TODO: mark_errors? */
+  free_list(*lst);
+  *lst = new_head();
+  return 0;
+}
+
 int edit(Board** board, char* filename, LinkedList** lst)
 {
   Board* temp;
-  if(load_board(&temp, filename)!=0) return 1;
+  if(load_board(&temp, filename)!=0)
+  {
+    printf("Not a valid input file\n");
+    return 1;
+  }
   set_valid_values(temp);
   free_board(*board);
   *board = new_board(temp->m, temp->n);
@@ -123,7 +163,7 @@ int save(Board* board, char* filename)
 {
   if(board->mode == INIT_MODE)
   {
-    printf("Command not available in init mode\n"); 
+    printf("Command not only available in edit mode or solve mode\n"); 
     return 1;
   }
   if(board->mode == SOLVE_MODE)
@@ -142,13 +182,16 @@ int save(Board* board, char* filename)
       printf("The board is not solveable\n");
       return 1; 
     }
-    /* TODO: mark all non-empty cells as fixed (maybe copy) */
     return save_board(board, filename);
   }
 }
 
 void mark_errors(Board* board, int val)
 {
+  if(board->mode != SOLVE_MODE)
+  {
+    printf("Command only available in solve mode\n");
+  }
   board->mark_errors = val;
 }
 
@@ -190,6 +233,11 @@ int set(Board* board, int x, int y, int z, LinkedList* lst)
 
 int validate(Board* board)
 {
+  if(board->mode == INIT_MODE)
+  {
+    printf("Command only available in edit mode or solve mode\n");
+    return 1;
+  }
   if(!is_board_legal(board))
   {
     printf("The board is erroneous\n");
@@ -351,14 +399,9 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   Move* moves;
   if(!(board->mode == EDIT_MODE)) 
   {
-    printf("Command not available in edit mode\n");
+    printf("Command only available in edit mode\n");
     return 1;
   }
-  if(!is_board_legal(board))
-  {
-    printf("The board is erroneous\n");
-    return 1;
-  } 
   n = board->n;
   m = board->m;
   N = get_N(board);
@@ -370,7 +413,12 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   }
   if(N*N > y)
   {
-    printf("Y can't be larger than the total amount cells in the board");
+    printf("Y can't be larger than the total amount cells in the board\n");
+    return 1;
+  } 
+  if(!is_board_legal(board))
+  {
+    printf("The board is erroneous\n");
     return 1;
   } 
   temp = new_board(m, n);
@@ -437,7 +485,6 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     cell = get_random_cell(cells, N*N, i);
     cell->value = 0;
   }
-  /*TODO: fix all cells? */
   i = get_moves(board, solved_board, &moves);
   if(i != 0) append_next(lst, moves, i);
   free(cells);
@@ -451,6 +498,11 @@ int undo(Board* board, LinkedList* lst)
 {
   Move* moves;
   int k, count;
+  if(board->mode == INIT_MODE)
+  {
+    printf("Command not only available in edit mode or solve mode\n"); 
+    return 1;
+  }
   count = lst->curr->move_count;
   if(count == 0) 
   {
@@ -472,6 +524,11 @@ int redo(Board* board, LinkedList* lst)
 {
   Move* moves;
   int k, count;
+  if(board->mode == INIT_MODE)
+  {
+    printf("Command not only available in edit mode or solve mode\n"); 
+    return 1;
+  }
   if(move_forward(lst) == -1)
   {
     printf("No moves to redo\n");
@@ -493,6 +550,11 @@ int reset(Board* board, LinkedList* lst)
   Move* moves;
   int k, count;
   count = lst->curr->move_count;
+  if(board->mode == INIT_MODE)
+  {
+    printf("Command not only available in edit mode or solve mode\n"); 
+    return 1;
+  }
   while(count != 0) 
   {
     moves = lst->curr->m;
@@ -537,8 +599,12 @@ int hint(Board* board, int x, int y)
 
 int num_solutions(Board* board)
 {
-  if(board->mode == INIT_MODE) return 1; /* invalid mode */
-  if(!(is_board_legal(board))) return 1; /* erroneous board */
+  if(board->mode == INIT_MODE)
+  {
+    printf("Command not only available in edit mode or solve mode\n"); 
+    return 1;
+  }
+  if(!(is_board_legal(board))) return 1; /* TODO erroneous board */
   printf("Number of solutions: %d\n", solution_count(board));
   return 0;
 }
@@ -630,27 +696,6 @@ int autofill(Board* board, LinkedList* lst)
   return 0;
 }
 
-/* Fill <board> with obvious values (one pass, correctness guarenteed)
-maybe not needed */
-/* static int autofill_board(Board* board)
-{
-  Board* temp;
-  int i, j, N;
-  N = get_N(board);
-  for (i = 0; i < N; i++)
-    {
-      for (j = 0; j < N; j++)
-      {
-        if(obvious_value(board, i, j))
-        {
-          cell_at(board, i, j)->value = obvious_value(board, i, j);
-        }
-      }
-    }
-  set_valid_values(board);
-  return 0;
-} */
-
 static Scores_matrix** new_scores_matrices(int N)
 {
   Scores_matrix** scores_matrices;
@@ -686,7 +731,7 @@ int guess_hint(Board* board, int x, int y)
     N = get_N(board);
   if(board->mode != SOLVE_MODE)
   {
-    printf("Command only available in SOLVE mode\n");
+    printf("Command only available in solve mode\n");
     return 1;
   }
   if(x < 1 || x > N || y < 1 || y > N)
@@ -754,17 +799,17 @@ int guess(Board* board, float x, LinkedList* lst)
   Cell* cell;
   int candidate;
   Scores_matrix** scores_matrices;
+  if(board->mode != SOLVE_MODE)
+  {
+    printf("Command only available in solve mode\n");
+    return 1;
+  }
   if(x < 0.0 || x > 1.0)
   {
     printf("Invalid value for x\n");
     return 1;
   }
   N = get_N(board);
-  if(board->mode != SOLVE_MODE)
-  {
-    printf("Command only available in SOLVE mode\n");
-    return 1;
-  }
   if(!is_board_legal(board))
   {
     printf("The board is erroneous\n");

@@ -128,11 +128,12 @@ int solution_count(Board* b) {
             else /* we have a valid option for the last cell */
             {
                 count++;
-                printf("Found Solution #%d for %dx%d\n", count, temp_board->m, temp_board->n);
+                /* printf("Found Solution #%d for %dx%d\n", count, temp_board->m, temp_board->n); */
                 tmp = pop(s, &bin);
                 i = tmp->i;
                 j = tmp->j;
                 k = tmp->curr_value;
+                free(tmp);
             }
         } else {
             tmp = pop(s, &bin);
@@ -140,6 +141,7 @@ int solution_count(Board* b) {
             j = tmp->j;
             k = tmp->curr_value;
             cell_at(temp_board, i, j)->value = k;
+            free(tmp);
         }
         curr_cell = cell_at(temp_board, i, j);
         k = lowest_available_option(temp_board, i, j, curr_cell->value+1);
