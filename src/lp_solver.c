@@ -160,7 +160,7 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
     double* constraints = (double*) malloc(sizeof(double)*N); /* We wouldn't need more than N variables in each constraint */
     int* const_ind = (int*) malloc(sizeof(int)*N);
     if ((type != CELL_CONST) && (type != ROW_CONST) && (type != COL_CONST) && (type != BLOCK_CONST)) {
-        printf("Error at set_constraints(): Unidentified type\n");
+        /* printf("Error at set_constraints(): Unidentified type\n"); */
         free(const_ind);
         free(constraints);
         return -1;
@@ -348,13 +348,14 @@ int integer_linear_solve(Board* b, Board* res) {
         return -1;
     }
 
-    /* For testing - review that model is correct */
+    /* For testing - review that model is correct
     err = GRBwrite(model, "int_sol.lp");
     if (err) {
-        /* printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env)); */
+        printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
         free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
+    */
 
     err = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &solveable);
     if (err) {
@@ -455,7 +456,7 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         return -1;
     }
 
-    err = GRBnewmodel(env, &model, "int_sol", 0, NULL, NULL, NULL, NULL, NULL);
+    err = GRBnewmodel(env, &model, "linear_sol", 0, NULL, NULL, NULL, NULL, NULL);
     if (err) {
         /* printf("Error code %d in GRBnewmodel(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
@@ -517,27 +518,27 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
 
     err = GRBoptimize(model);
     if (err) {
-        printf("Error code %d in GRBOptimize(): %s\n", err, GRBgeterrormsg(env));
+        /* printf("Error code %d in GRBOptimize(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
         free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
     }
 
-    /* For testing - review that model is correct */
-    err = GRBwrite(model, "int_sol.lp");
+    /* For testing - review that model is correct
+    err = GRBwrite(model, "linear_sol.lp");
     if (err) {
         printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
         free(ub);
         free_resources(env, model, var_names, sol, var_types, in_use, N);
         return -1;
-    }
+    } */
     free(in_use);
     free(var_types);
     free_names(&var_names, N);
     free(ub);
     err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, N*N*N, sol);
     if (err) {
-        printf("Error code %d in GRBgetdblattrarray(): %s\n", err, GRBgeterrormsg(env));
+        /* printf("Error code %d in GRBgetdblattrarray(): %s\n", err, GRBgeterrormsg(env)); */
         free(sol);
         GRBfreemodel(model);
         GRBfreeenv(env);
