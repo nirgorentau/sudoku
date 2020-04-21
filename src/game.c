@@ -147,6 +147,9 @@ int edit_default(Board** board, LinkedList** lst)
 int edit(Board** board, char* filename, LinkedList** lst)
 {
   Board* temp;
+  if (filename == NULL) {
+    return edit_default(board, lst);
+  }
   if(load_board(&temp, filename)!=0)
   {
     printf("Error loading file %s\n", filename);
