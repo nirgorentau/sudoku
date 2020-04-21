@@ -40,6 +40,7 @@ Scores_matrix* new_scores_matrix(int N)
             scores_matrix->matrix[i][j] = 0.0;
         }
     }
+  scores_matrix->N = N;
   return scores_matrix;
 }
 
@@ -73,8 +74,7 @@ int calc_index(int N, int x, int y, int val) {
 }
 
 /* converts n to a string. n must be up to 4 digits */
-char* int_to_str(int n) {
-    char* ret = (char*) malloc(sizeof(char)*5);
+char* int_to_str(int n, char* ret) {
     int i;
     for (i = 1; i <= 4; i++) {
         ret[4-i] = '0' + (n % 10);
@@ -82,6 +82,17 @@ char* int_to_str(int n) {
     }
     ret[4] = '\0';
     return ret;
+}
+
+/* Free an array of variable names */
+void free_names(char*** names, int N)
+{
+    int i;
+    for ( i = 0; i < N*N*N; i++)
+    {
+        free((*names)[i]);
+    }
+    free(*names);
 }
 
 /* Generates a string name accortding to the given type:
@@ -94,40 +105,41 @@ char* int_to_str(int n) {
    j: the x value
    k: cell's content */
 char* format_name(int type, int i, int j, int k) {
+    char tmp[5];
     char* ret = (char*) malloc(sizeof(char)*NAME_MAX_LEN);
     ret[0] = '\0';
     if (type == VAR_NAME) {
         strcat(ret, "Cell(");
-        strcat(ret, int_to_str(i));
+        strcat(ret, int_to_str(i, tmp));
         strcat(ret, ",");
-        strcat(ret, int_to_str(j));
+        strcat(ret, int_to_str(j, tmp));
         strcat(ret, "):");
-        strcat(ret, int_to_str(k));
+        strcat(ret, int_to_str(k, tmp));
         strcat(ret, "\0");
     } else if (type == CELL_CONST) {
         strcat(ret, "VCell(");
-        strcat(ret, int_to_str(i));
+        strcat(ret, int_to_str(i, tmp));
         strcat(ret, ",");
-        strcat(ret, int_to_str(j));
+        strcat(ret, int_to_str(j, tmp));
         strcat(ret, ")");
         strcat(ret, "\0");
     } else if (type == ROW_CONST) {
         strcat(ret, "Row(");
-        strcat(ret, int_to_str(i));
+        strcat(ret, int_to_str(i, tmp));
         strcat(ret, "):");
-        strcat(ret, int_to_str(j+1));
+        strcat(ret, int_to_str(j+1, tmp));
         strcat(ret, "\0");
     } else if (type == COL_CONST) {
         strcat(ret, "Col(");
-        strcat(ret, int_to_str(i));
+        strcat(ret, int_to_str(i, tmp));
         strcat(ret, "):");
-        strcat(ret, int_to_str(j+1));
+        strcat(ret, int_to_str(j+1, tmp));
         strcat(ret, "\0");
     } else if (type == BLOCK_CONST) {
         strcat(ret, "Blk(");
-        strcat(ret, int_to_str(i));
+        strcat(ret, int_to_str(i, tmp));
         strcat(ret, "):");
-        strcat(ret, int_to_str(j+1));
+        strcat(ret, int_to_str(j+1, tmp));
         strcat(ret, "\0");
     }
     return ret;
@@ -142,6 +154,7 @@ returns:
 int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in_use, int N) {
     int i, j, k;
     int count;
+    char* name;
     int err = 0;
     double not_in_block;
     double* constraints = (double*) malloc(sizeof(double)*N); /* We wouldn't need more than N variables in each constraint */
@@ -194,7 +207,9 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
             }
             if ((type != CELL_CONST) || (cell_at(b, i, j)->value == 0)) {
                 /* We don't add a constraint for an already-filled cell */
-                err = GRBaddconstr(model, count, const_ind, constraints, GRB_EQUAL, not_in_block, format_name(type, i, j, 0));
+                name = format_name(type, i, j, 0);
+                err = GRBaddconstr(model, count, const_ind, constraints, GRB_EQUAL, not_in_block, name);
+                free(name);
             } else {
                 err = 0;
             }
@@ -215,6 +230,8 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
         }
     }
     /* Finished successfully */
+    free(const_ind);
+    free(constraints);
     return 0;
 }
 
@@ -255,6 +272,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -266,6 +284,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -277,6 +296,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -288,6 +308,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -299,6 +320,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -310,6 +332,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -320,6 +343,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -330,6 +354,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -340,6 +365,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -350,6 +376,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -361,6 +388,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -373,6 +401,7 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -384,12 +413,14 @@ int integer_linear_solve(Board* b, Board* res) {
         free(in_use);
         free(var_types);
         free(sol);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
     }
     free(in_use);
     free(var_types);
+    free_names(&var_names, N);
     if (solveable == GRB_OPTIMAL) {
         err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, N*N*N, sol);
         if (err) {
@@ -417,6 +448,7 @@ int integer_linear_solve(Board* b, Board* res) {
     } else {
         /* Unsolveable */
         free(sol);
+    return 0;
         GRBfreemodel(model);
         GRBfreeenv(env);
         return 1;
@@ -467,6 +499,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -478,6 +512,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -489,6 +525,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -500,6 +538,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -511,6 +551,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -522,6 +564,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -532,6 +576,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -542,6 +588,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -552,6 +600,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -562,6 +612,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -573,6 +625,8 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -585,12 +639,16 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         free(in_use);
         free(var_types);
         free(sol);
+        free(ub);
+        free_names(&var_names, N);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
     }
     free(in_use);
     free(var_types);
+    free_names(&var_names, N);
+    free(ub);
     err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, N*N*N, sol);
     if (err) {
         printf("Error code %d in GRBgetdblattrarray(): %s\n", err, GRBgeterrormsg(env));

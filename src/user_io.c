@@ -93,7 +93,7 @@ int read_command(Board** board, LinkedList** lst)
     }
     else if (strcmp(cmd, "exit") == 0) 
     {
-      exit_program(*board, *lst);
+      return CMD_EXIT;
     } 
     else if (strcmp(cmd, "set") == 0) 
     {

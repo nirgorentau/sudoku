@@ -421,7 +421,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     printf("X is too large, not enough empty cells to fill with random values\n");
     return 1;
   }
-  if(N*N > y)
+  if(N*N < y)
   {
     printf("Y can't be larger than the total amount cells in the board\n");
     return 1;
@@ -739,7 +739,7 @@ static void free_scores_matrices(Scores_matrix** scores_matrices, int N)
   int i;
   for (i = 0; i < N; i++)
   {
-    free(scores_matrices[i]);
+    free_scores_matrix(scores_matrices[i]);
   }
   free(scores_matrices);
 }
@@ -790,7 +790,7 @@ int guess_hint(Board* board, int x, int y)
       printf("Score for value %d: %f\n", k+1, score_at(scores_matrices[k], i, j));
     }
   }
-  free(temp);
+  free_board(temp);
   free_scores_matrices(scores_matrices, N);
   return 0;
 }
@@ -895,5 +895,5 @@ int exit_program(Board* board, LinkedList* lst)
   free_board(board);
   free_list(lst);
   printf("Exiting...\n");
-  exit(0);
+  return 0;
 }

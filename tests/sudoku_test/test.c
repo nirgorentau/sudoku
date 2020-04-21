@@ -3,10 +3,10 @@
 int main() {
     LinkedList* lst = NULL;
     Board* board = NULL;
-    while(1)
+    while(read_command(&board, &lst) != CMD_EXIT)
     {
-      read_command(&board, &lst);
       if(board != NULL) display_board(board);
     }
+    exit_program(board, lst);
     return 0;
 }
