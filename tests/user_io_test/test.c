@@ -11,7 +11,6 @@ int main() {
     LinkedList* undo_redo_list = new_list();
     int state = read_command(&b, &undo_redo_list);
     while (state != CMD_EXIT) {
-        display_board(b);
         if (state == CMD_SUCCESS) {
             printf("SUCCESS\n");
         } else if (state == CMD_ERR) {
