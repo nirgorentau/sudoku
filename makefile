@@ -2,7 +2,7 @@ CC = gcc
 OBJS = main.o board.o linked_list.o file_io.o stack.o display_board.o deterministic_solver.o lp_solver.o game.o user_io.o
 IDIR = src
 EXEC = sudoku-console
-CFLAGS = -ansi -O3 -Wall -Wextra -Werror -pedantic-errors -I$(IDIR) -g
+CFLAGS = -ansi -O3 -Wall -Wextra -Werror -pedantic-errors -I$(IDIR)
 GUROBI_COMP = -I${GUROBI_HOME}/include
 GUROBI_LIB = -L${GUROBI_HOME}/lib -lgurobi56
 
