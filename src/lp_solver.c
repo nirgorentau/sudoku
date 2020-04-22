@@ -205,6 +205,12 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
                     count++;
                 }
             }
+            /* If value is in [block/row/column], we want the total sum to be 0 */
+            if (not_in_block == 0.0) {
+                for (k = 0; k < N; k++) {
+                    constraints[k] = 1.0;
+                }
+            }
             if ((type != CELL_CONST) || (cell_at(b, i, j)->value == 0)) {
                 /* We don't add a constraint for an already-filled cell */
                 name = format_name(type, i, j, 0);
