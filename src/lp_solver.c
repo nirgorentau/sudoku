@@ -177,39 +177,57 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
                 if (type == CELL_CONST) {
                     /* i: row, j: column, k: value */
                     constraints[count] = in_use[calc_index(N, i, j, k+1)];
-                    const_ind[count] = calc_index(N, i, j, k+1);
-                    count++;
+                    if (constraints[count] == 1.0) {
+                        const_ind[count] = calc_index(N, i, j, k+1);
+                        count++;
+                    }
                 } else if (type == ROW_CONST) {
                     /* i: row, j: value, k: column */
                     if (cell_at(b, i, k)->value == j+1) {
                         not_in_block = 0.0;
                     }
                     constraints[count] = in_use[calc_index(N, i, k, j+1)];
-                    const_ind[count] = calc_index(N, i, k, j+1);
-                    count++;
+                    if (constraints[count] == 1.0) {
+                        const_ind[count] = calc_index(N, i, k, j+1);
+                        count++;
+                    }
                 } else if (type == COL_CONST) {
                     /* i: column, j: value, k: row */
                     if (cell_at(b, k, i)->value == j+1) {
                         not_in_block = 0.0;
                     }
-                    constraints[count] = in_use[calc_index(N, k, i, j+1)] == 1.0;
-                    const_ind[count] = calc_index(N, k, i, j+1);
-                    count++;
+                    constraints[count] = in_use[calc_index(N, k, i, j+1)];
+                    if (constraints[count] == 1.0) {
+                        const_ind[count] = calc_index(N, k, i, j+1);
+                        count++;
+                    }
                 } else {
                     /* i: Block number, j: value, k: cell in block */
                     if (cell_at_block(b, i, k)->value == j+1) {
                         not_in_block = 0.0;
                     }
                     constraints[count] = in_use[calc_index(N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1)];
-                    const_ind[count] = calc_index(N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1);
-                    count++;
+                    if (constraints[count] == 1.0) {
+                        const_ind[count] = calc_index(N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1);
+                        count++;
+                    }
                 }
             }
             /* If value is in [block/row/column], we want the total sum to be 0 */
             if (not_in_block == 0.0) {
                 for (k = 0; k < N; k++) {
                     constraints[k] = 1.0;
+                    if (type == CELL_CONST) {
+                        const_ind[count] = calc_index(N, i, j, k+1);
+                    } else if (type == ROW_CONST) {
+                        const_ind[k] = calc_index(N, i, k, j+1);
+                    } else if (type == COL_CONST) {
+                        const_ind[k] = calc_index(N, k, i, j+1);
+                    } else {
+                        const_ind[k] = calc_index(N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1);
+                    }
                 }
+                count = N;
             }
             if ((type != CELL_CONST) || (cell_at(b, i, j)->value == 0)) {
                 /* We don't add a constraint for an already-filled cell */
