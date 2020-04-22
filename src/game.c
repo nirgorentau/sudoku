@@ -556,7 +556,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
   if(k == 1000)
   {
     printf("Failed to generate board\n");
-    free(solved_board);
+    free_board(solved_board);
     return 1;
   }
   cells = malloc(sizeof(Cell*) * N*N);
