@@ -205,6 +205,12 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
                     count++;
                 }
             }
+            /* If value is in [block/row/column], we want the total sum to be 0 */
+            if (not_in_block == 0.0) {
+                for (k = 0; k < N; k++) {
+                    constraints[k] = 1.0;
+                }
+            }
             if ((type != CELL_CONST) || (cell_at(b, i, j)->value == 0)) {
                 /* We don't add a constraint for an already-filled cell */
                 name = format_name(type, i, j, 0);
@@ -349,14 +355,14 @@ int integer_linear_solve(Board* b, Board* res) {
         return -1;
     }
 
-    /* For testing - review that model is correct
+    /* For testing - review that model is correct */
     err = GRBwrite(model, "int_sol.lp");
     if (err) {
         printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
-        free_resources(env, model, var_names, sol, var_types, in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
         return -1;
     }
-    */
+    
 
     err = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &solveable);
     if (err) {
