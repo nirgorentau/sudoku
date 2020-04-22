@@ -602,7 +602,7 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     }
     free(in_use);
     free(var_types);
-    free_names(&var_names, N);
+    free_names(&var_names, num_in_use);
     free(ub);
     err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_in_use, sol);
     if (err) {
