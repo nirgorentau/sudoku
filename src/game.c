@@ -70,6 +70,7 @@ static int are_fixed_cells_legal(Board* board)
   N = get_N(board);
   m = board->m;
   n = board->n;
+  /* Copy the fixed cells to a temporary board */
   temp = new_board(m, n);
   for (i = 0; i < N; i++)
   {
@@ -452,7 +453,7 @@ int set(Board* board, int x, int y, int z, LinkedList* lst)
     }
   }
   cell->value = z;
-  set_valid_values(board); /* can be made more efficient since only neighbors need to be updated */
+  set_valid_values(board);
   move = new_move(1);
   set_move(move, 0, i, j, prev, z);
   append_next(lst, move, 1);
@@ -534,26 +535,26 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     failed = 0;
     copy_board(temp, board);
     get_empty_cells(cells, temp);
-    for (i = 0; i < x; i++)
+    for (i = 0; i < x; i++) /* Add random (valid) values for x random cells */
     {
       cell = get_random_cell(cells, empty_cells_count, i);
-      set_invalid_values_for_cell(temp, cell, values);
+      set_invalid_values_for_cell(temp, cell, values); /* Set the valid values for the cell to choose from */
       val = get_random_valid_value(values, N);
-      if(val == 0)
+      if(val == 0) /* There is no valid value for the cell */
       {
         failed = 1;
         break;
       } 
       else cell->value = val;
     }
-    if(failed) continue; /* Try again in the next iteration */
-    if(integer_linear_solve(temp, solved_board) != 0) continue;
+    if(failed) continue; /* Couldn't generate a valid board, Try again in the next iteration */
+    if(integer_linear_solve(temp, solved_board) != 0) continue; /* The generated board isn't solvable, try again */
     else break;
   }
   free(values);
   free_board(temp);
   free(cells);
-  if(k == 1000)
+  if(k == 1000) /* Failed after 1000 tries */
   {
     printf("Failed to generate board\n");
     free_board(solved_board);
@@ -565,6 +566,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
     printf("Memory allocation failed\n");
     exit(-1);
   }
+  /* Fill the cells array with pointers to the cells of the board */
   for ( i = 0; i < N; i++)
   {
     for ( j = 0; j < N; j++)
@@ -575,7 +577,7 @@ int generate(Board* board, int x, int y, LinkedList* lst)
 
   for ( i = 0; i < N*N - y; i++)
   {
-    cell = get_random_cell(cells, N*N, i);
+    cell = get_random_cell(cells, N*N, i); /* Choose a random cell (no repetitions) */
     cell->value = 0;
   }
   i = get_moves(board, solved_board, &moves);
@@ -747,6 +749,7 @@ int autofill(Board* board, LinkedList* lst)
   temp = new_board(board->m, board->n);
   copy_board(temp, board);
   counter = 0;
+  /* Count how many cells will be filled */
   for (i = 0; i < N; i++)
   {
     for (j = 0; j < N; j++)
@@ -759,6 +762,7 @@ int autofill(Board* board, LinkedList* lst)
   }
   if(counter)
   {
+    /* Fill the cells with their forced value */
     moves = new_move(counter);
     k = 0;
     for (i = 0; i < N; i++)
@@ -817,7 +821,8 @@ int guess_hint(Board* board, int x, int y)
 
   temp = new_board(board->m, board->n);
   copy_board(temp, board);
-  scores_matrices = new_scores_matrices(N);
+  scores_matrices = new_scores_matrices(N); /* The values of the i, j k'th score matrix represents the score
+  of the value k for the cell in the i'th row and j'th column */
   linear_solve(temp, scores_matrices, N);
   for (k = 0; k < N; k++)
   {
@@ -860,7 +865,7 @@ int guess(Board* board, float x, LinkedList* lst)
   }
   temp = new_board(board->m, board->n);
   copy_board(temp, board);
-  scores_matrices = new_scores_matrices(N);
+  scores_matrices = new_scores_matrices(N); /* Would store the scores for the different values for the cell */
   linear_solve(temp, scores_matrices, N);
   for ( i = 0; i < N; i++)
   {
@@ -875,6 +880,7 @@ int guess(Board* board, float x, LinkedList* lst)
         printf("Memory allocation failed\n");
         return 1;
       }
+      /* fill the values and scores vector with values that have a score greater than x */
       for ( k = 0; k < N; k++)
       {
         if(score_at(scores_matrices[k], i, j) > x)
@@ -887,6 +893,7 @@ int guess(Board* board, float x, LinkedList* lst)
       }
       if(l>0)
       {
+        /* Choose a random value (distribution proportional to the score) and the the cell to that value, if it is legal */
         candidate = choose_random_value(values_vector, scores_vector, scores_sum, l);
         cell = cell_at(board, i, j);
         if(is_value_valid_for_cell(board, i, j, candidate)) cell->value = candidate;

@@ -56,7 +56,7 @@ int load_board(Board** board, char* path)
       {
         if (t == '.') 
         {
-          if(v == 0) return load_failure(tboard);
+          if(v == 0) return load_failure(tboard); /* Fixed empty cell */
           else cell_at(tboard, i, j)->fixed = 1;
         }
         else if(t != ' ' && t != '\n' && t != '\t') return load_failure(tboard);
