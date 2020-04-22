@@ -430,7 +430,7 @@ int integer_linear_solve(Board* b, Board* res) {
                     cell_at(res, i, j)->value = tmp->value;
                 } else {
                     for (k = 1; k <= N; k++) {
-                        if (sol[calc_index(index_translation, N, i, j, k)] == 1.0) {
+                        if ((calc_index(index_translation, N, i, j, k) != -1) && (sol[calc_index(index_translation, N, i, j, k)] == 1.0)) {
                             cell_at(res, i, j)->value = k;
                         }
                     }
