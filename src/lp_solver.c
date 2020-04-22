@@ -69,8 +69,8 @@ double score_at(Scores_matrix* scores_matrix, int i, int j)
 
 /* The variable that represents the value <val> for cell <x,y> is in cell (N^2*x +N*y + z-1)
  in the variable array for gurobi */
-int calc_index(int N, int x, int y, int val) {
-    return N*N*x + N*y + val - 1;
+int calc_index(int* translation, int N, int x, int y, int val) {
+    return translation[N*N*x + N*y + val - 1];
 }
 
 /* converts n to a string. n must be up to 4 digits */
@@ -85,10 +85,10 @@ char* int_to_str(int n, char* ret) {
 }
 
 /* Free an array of variable names */
-void free_names(char*** names, int N)
+void free_names(char*** names, int count)
 {
     int i;
-    for ( i = 0; i < N*N*N; i++)
+    for ( i = 0; i < count; i++)
     {
         free((*names)[i]);
     }
@@ -151,7 +151,7 @@ returns:
 0 == success
 -1 == error
 */
-int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in_use, int N) {
+int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, int* ind_trans, double* in_use, int N) {
     int i, j, k;
     int count;
     char* name;
@@ -165,6 +165,9 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
         free(constraints);
         return -1;
     }
+    if (in_use[0]) {
+        err = 0;
+    }
     for (i = 0; i < N; i++) {
         const_ind[i] = 0;
         constraints[i] = 0.0;
@@ -174,11 +177,12 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
             count = 0;
             not_in_block = 1.0;
             for (k = 0; k < N; k++) {
+                constraints[count] = 0.0;
                 if (type == CELL_CONST) {
                     /* i: row, j: column, k: value */
-                    constraints[count] = in_use[calc_index(N, i, j, k+1)];
-                    if (constraints[count] == 1.0) {
-                        const_ind[count] = calc_index(N, i, j, k+1);
+                    if (calc_index(ind_trans, N, i, j, k+1) != -1) {
+                        const_ind[count] = calc_index(ind_trans, N, i, j, k+1);
+                        constraints[count] = 1.0;
                         count++;
                     }
                 } else if (type == ROW_CONST) {
@@ -186,9 +190,9 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
                     if (cell_at(b, i, k)->value == j+1) {
                         not_in_block = 0.0;
                     }
-                    constraints[count] = in_use[calc_index(N, i, k, j+1)];
-                    if (constraints[count] == 1.0) {
-                        const_ind[count] = calc_index(N, i, k, j+1);
+                    if (calc_index(ind_trans, N, i, k, j+1) != -1) {
+                        const_ind[count] = calc_index(ind_trans, N, i, k, j+1);
+                        constraints[count] = 1.0;
                         count++;
                     }
                 } else if (type == COL_CONST) {
@@ -196,9 +200,9 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
                     if (cell_at(b, k, i)->value == j+1) {
                         not_in_block = 0.0;
                     }
-                    constraints[count] = in_use[calc_index(N, k, i, j+1)];
-                    if (constraints[count] == 1.0) {
-                        const_ind[count] = calc_index(N, k, i, j+1);
+                    if (calc_index(ind_trans, N, k, i, j+1) != -1) {
+                        const_ind[count] = calc_index(ind_trans, N, k, i, j+1);
+                        constraints[count] = 1.0;
                         count++;
                     }
                 } else {
@@ -206,31 +210,31 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
                     if (cell_at_block(b, i, k)->value == j+1) {
                         not_in_block = 0.0;
                     }
-                    constraints[count] = in_use[calc_index(N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1)];
-                    if (constraints[count] == 1.0) {
-                        const_ind[count] = calc_index(N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1);
+                    if (calc_index(ind_trans, N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1) == 1.0) {
+                        const_ind[count] = calc_index(ind_trans, N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1);
+                        constraints[count] = 1.0;
                         count++;
                     }
                 }
             }
-            /* If value is in [block/row/column], we want the total sum to be 0 */
+            /* If value is in [block/row/column], we want the total sum to be 0 
             if (not_in_block == 0.0) {
                 for (k = 0; k < N; k++) {
                     constraints[k] = 1.0;
                     if (type == CELL_CONST) {
-                        const_ind[count] = calc_index(N, i, j, k+1);
+                        const_ind[k] = calc_index(ind_trans, N, i, j, k+1);
                     } else if (type == ROW_CONST) {
-                        const_ind[k] = calc_index(N, i, k, j+1);
+                        const_ind[k] = calc_index(ind_trans, N, i, k, j+1);
                     } else if (type == COL_CONST) {
-                        const_ind[k] = calc_index(N, k, i, j+1);
+                        const_ind[k] = calc_index(ind_trans, N, k, i, j+1);
                     } else {
-                        const_ind[k] = calc_index(N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1);
+                        const_ind[k] = calc_index(ind_trans, N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1);
                     }
                 }
                 count = N;
-            }
-            if ((type != CELL_CONST) || (cell_at(b, i, j)->value == 0)) {
-                /* We don't add a constraint for an already-filled cell */
+            }*/
+            if (((type != CELL_CONST) || (cell_at(b, i, j)->value == 0)) && (count > 0)) {
+                /* We don't add a constraint for an already-filled cell, row, column or block */
                 name = format_name(type, i, j, 0);
                 err = GRBaddconstr(model, count, const_ind, constraints, GRB_EQUAL, not_in_block, name);
                 free(name);
@@ -242,11 +246,11 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
                 /* if (type == CELL_CONST) {
                     printf("Error code %d in GRBaddconstr() for cell (%d, %d): %s\n", err, i, j, GRBgeterrormsg(env));
                 } else if (type == ROW_CONST) {
-                    printf("Error code %d in GRBaddconstr() for row %d, value %d: %s\n", err, i, j, GRBgeterrormsg(env));
+                    printf("Error code %d in GRBaddconstr() for row %d, value %d: %s\n", err, i, j+1, GRBgeterrormsg(env));
                 } else if (type == COL_CONST) {
-                    printf("Error code %d in GRBaddconstr() for column %d, value %d: %s\n", err, i, j, GRBgeterrormsg(env));
+                    printf("Error code %d in GRBaddconstr() for column %d, value %d: %s\n", err, i, j+1, GRBgeterrormsg(env));
                 } else {
-                    printf("Error code %d in GRBaddconstr() for block %d, value %d: %s\n", err, i, j, GRBgeterrormsg(env));
+                    printf("Error code %d in GRBaddconstr() for block %d, value %d: %s\n", err, i, j+1, GRBgeterrormsg(env));
                 }  */
                 free(const_ind);
                 free(constraints);
@@ -260,11 +264,12 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, double* in
     return 0;
 }
 
-void free_resources(GRBenv** env, GRBmodel** model, char*** var_names, double** sol, char** var_types, double** in_use, int N) {
+void free_resources(GRBenv** env, GRBmodel** model, char*** var_names, double** sol, char** var_types, double** in_use, int count, int** index_translation) {
         free(*in_use);
         free(*var_types);
         free(*sol);
-        free_names(var_names, N);
+        free_names(var_names, count);
+        free(*index_translation);
         GRBfreemodel(*model);
         GRBfreeenv(*env);
 }
@@ -275,101 +280,117 @@ int integer_linear_solve(Board* b, Board* res) {
     GRBmodel* model = NULL;
     int err;
     int N = get_N(b);
-    char* var_types = (char*) malloc(sizeof(int)*N*N*N);
-    double* sol = (double*) malloc(sizeof(double)*N*N*N);
+    char* var_types;
+    double* sol;
     int solveable;
-    double* in_use = (double*) malloc(sizeof(double)*N*N*N);
+    double* in_use;
     int num_in_use = 0;
     int i, j, k;
     Cell* tmp;
-    char** var_names = (char**) malloc(sizeof(char*)*N*N*N);
-    for (i=0; i < N*N*N; i++) {
-        var_types[i] = GRB_BINARY;
-        in_use[i] = 0.0;
-    }
+    char** var_names;
+    int* index_translation = (int*) malloc(sizeof(int)*N*N*N); /* holds translations from (x, y, val) to index of variable. -1 if variable not in use */
+    /* Count how many variables we actually need (legal values for empty cells) */
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             for (k = 1; k <= N; k++) {
+                index_translation[N*N*i + N*j + k-1] = -1;
                 if(cell_at(b, i, j)->value == 0 && is_valid(b, i, j, k)) {
-                    in_use[calc_index(N, i, j, k)] = 1.0;
+                    index_translation[N*N*i + N*j + k-1] = num_in_use;
                     num_in_use++;
                 }
-                var_names[calc_index(N, i, j, k)] = format_name(VAR_NAME, i, j, k);
             }
         }
+    }
+    /* Initialize variable data arrays */
+    in_use = (double*) malloc(sizeof(double)*num_in_use);
+    var_types = (char*) malloc(sizeof(char)*num_in_use);
+    var_names = (char**) malloc(sizeof(char*)*num_in_use);
+    sol = (double*) malloc(sizeof(double)*num_in_use);
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            for (k = 1; k <= N; k++) {
+                if(calc_index(index_translation, N, i, j, k) != -1) {
+                   var_names[calc_index(index_translation, N, i, j, k)] = format_name(VAR_NAME, i, j, k);
+                }
+            }
+        }
+    }
+    for (i = 0; i < num_in_use; i++) {
+        in_use[i] = 1.0;
+        var_types[i] = GRB_BINARY;
     }
 
     /* Gurobi init */
     err = GRBloadenv(&env, NULL);
     if (err) {
         /* printf("Error code %d in GRBloadenv(): %s\n", err, GRBgeterrormsg(env)); */
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
     err = GRBsetintparam(env, GRB_INT_PAR_LOGTOCONSOLE, 0);
     if (err) {
         /* printf("Error code %d in GRBsetintparam(): %s\n", err, GRBgeterrormsg(env)); */
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
     err = GRBnewmodel(env, &model, "int_sol", 0, NULL, NULL, NULL, NULL, NULL);
     if (err) {
         /* printf("Error code %d in GRBnewmodel(): %s\n", err, GRBgeterrormsg(env)); */
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
-    err = GRBaddvars(model, N*N*N, 0, NULL, NULL, NULL, in_use, NULL, NULL, var_types, var_names);
+    err = GRBaddvars(model, num_in_use, 0, NULL, NULL, NULL, in_use, NULL, NULL, var_types, var_names);
     if (err) {
         /* printf("Error code %d in GRBaddvars(): %s\n", err, GRBgeterrormsg(env)); */
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
     err = GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE, GRB_MAXIMIZE);
     if (err) {
         /* printf("Error code %d in GRBsetintattr(): %s\n", err, GRBgeterrormsg(env)); */
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
     err = GRBupdatemodel(model);
     if (err) {
         /* printf("Error code %d in GRBupdatemodel(): %s\n", err, GRBgeterrormsg(env)); */
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
     /* Single value per cell */
-    if (set_constraints(CELL_CONST, env, model, b, in_use, N)) {
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+    if (set_constraints(CELL_CONST, env, model, b, index_translation, in_use, N)) {
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
     /* Single value per row */
-    if (set_constraints(ROW_CONST, env, model, b, in_use, N) == -1) {
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+    if (set_constraints(ROW_CONST, env, model, b, index_translation, in_use, N) == -1) {
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
     
     /* Single value per column */
-    if (set_constraints(COL_CONST, env, model, b, in_use, N) == -1) {
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+    if (set_constraints(COL_CONST, env, model, b, index_translation, in_use, N) == -1) {
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
     /* Single value per block */
-    if (set_constraints(BLOCK_CONST, env, model, b, in_use, N) == -1) {
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+    if (set_constraints(BLOCK_CONST, env, model, b, index_translation, in_use, N) == -1) {
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
     err = GRBoptimize(model);
     if (err) {
         /* printf("Error code %d in GRBOptimize(): %s\n", err, GRBgeterrormsg(env)); */
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
@@ -377,7 +398,7 @@ int integer_linear_solve(Board* b, Board* res) {
     err = GRBwrite(model, "int_sol.lp");
     if (err) {
         printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
     
@@ -385,17 +406,18 @@ int integer_linear_solve(Board* b, Board* res) {
     err = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &solveable);
     if (err) {
         /* printf("Error code %d in GRBgetintattr(): %s\n", err, GRBgeterrormsg(env)); */
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
     free(in_use);
     free(var_types);
-    free_names(&var_names, N);
+    free_names(&var_names, num_in_use);
     if (solveable == GRB_OPTIMAL) {
-        err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, N*N*N, sol);
+        err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_in_use, sol);
         if (err) {
             /* printf("Error code %d in GRBgetdblattrarray(): %s\n", err, GRBgeterrormsg(env)); */
             free(sol);
+            free(index_translation);
             GRBfreemodel(model);
             GRBfreeenv(env);
             return -1;
@@ -407,7 +429,7 @@ int integer_linear_solve(Board* b, Board* res) {
                     cell_at(res, i, j)->value = tmp->value;
                 } else {
                     for (k = 1; k <= N; k++) {
-                        if (sol[calc_index(N, i, j, k)] == 1) {
+                        if (sol[calc_index(index_translation, N, i, j, k)] == 1.0) {
                             cell_at(res, i, j)->value = k;
                         }
                     }
@@ -415,12 +437,14 @@ int integer_linear_solve(Board* b, Board* res) {
             }
         }
         free(sol);
+        free(index_translation);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return 0;
     } else {
         /* Unsolveable */
         free(sol);
+        free(index_translation);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return 1;
@@ -430,6 +454,7 @@ int integer_linear_solve(Board* b, Board* res) {
 int is_solvable(Board* b) {
     Board* bin = new_board(b->m, b->n);
     if(integer_linear_solve(b, bin)) {
+        free_board(bin);
 	    return 0;
     }
     free_board(bin);
@@ -445,23 +470,40 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     double* in_use = (double*) malloc(sizeof(double)*N*N*N);
     int num_in_use = 0;
     int i, j, k;
-    char** var_names = (char**) malloc(sizeof(char*)*N*N*N);
-    double* ub = (double*) malloc(sizeof(double)*N*N*N);
-    for (i=0; i < N*N*N; i++) {
-        var_types[i] = GRB_CONTINUOUS;
-        in_use[i] = 0.0;
-        ub[i] = 1.0;
-    }
+    char** var_names;
+    double* ub;
+    int* index_trans = (int*) malloc(sizeof(int)*N*N*N);
+    /* Count how many variables we actually need (legal values for empty cells) */
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             for (k = 1; k <= N; k++) {
+                index_trans[N*N*i + N*j + k-1] = -1;
                 if(cell_at(board, i, j)->value == 0 && is_valid(board, i, j, k)) {
-                    in_use[calc_index(N, i, j, k)] = 1.0;
+                    index_trans[N*N*i + N*j + k-1] = num_in_use;
                     num_in_use++;
                 }
-                var_names[calc_index(N, i, j, k)] = format_name(VAR_NAME, i, j, k);
             }
         }
+    }
+    /* Initialize variable data arrays */
+    in_use = (double*) malloc(sizeof(double)*num_in_use);
+    var_types = (char*) malloc(sizeof(char)*num_in_use);
+    var_names = (char**) malloc(sizeof(char*)*num_in_use);
+    ub = (double*) malloc(sizeof(double)*num_in_use);
+    sol = (double*) malloc(sizeof(double)*num_in_use);
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            for (k = 1; k <= N; k++) {
+                if(calc_index(index_trans, N, i, j, k) != -1) {
+                   var_names[calc_index(index_trans, N, i, j, k)] = format_name(VAR_NAME, i, j, k);
+                }
+            }
+        }
+    }
+    for (i = 0; i < num_in_use; i++) {
+        in_use[i] = 1.0;
+        var_types[i] = GRB_CONTINUOUS;
+        ub[i] = 1.0;
     }
 
     /* Gurobi init */
@@ -469,7 +511,7 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     if (err) {
         /* printf("Error code %d in GRBloadenv(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
@@ -477,7 +519,7 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     if (err) {
         /* printf("Error code %d in GRBsetintparam(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
@@ -485,15 +527,15 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     if (err) {
         /* printf("Error code %d in GRBnewmodel(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
-    err = GRBaddvars(model, N*N*N, 0, NULL, NULL, NULL, in_use, NULL, ub, var_types, var_names);
+    err = GRBaddvars(model, num_in_use, 0, NULL, NULL, NULL, in_use, NULL, ub, var_types, var_names);
     if (err) {
         /* printf("Error code %d in GRBaddvars(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
@@ -501,7 +543,7 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     if (err) {
         /* printf("Error code %d in GRBsetintattr(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
@@ -509,35 +551,35 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     if (err) {
         /* printf("Error code %d in GRBupdatemodel(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
     /* Single value per cell */
-    if (set_constraints(CELL_CONST, env, model, board, in_use, N)) {
+    if (set_constraints(CELL_CONST, env, model, board, index_trans, in_use, N)) {
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
     /* Single value per row */
-    if (set_constraints(ROW_CONST, env, model, board, in_use, N) == -1) {
+    if (set_constraints(ROW_CONST, env, model, board, index_trans, in_use, N) == -1) {
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
     
     /* Single value per column */
-    if (set_constraints(COL_CONST, env, model, board, in_use, N) == -1) {
+    if (set_constraints(COL_CONST, env, model, board, index_trans, in_use, N) == -1) {
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
     /* Single value per block */
-    if (set_constraints(BLOCK_CONST, env, model, board, in_use, N) == -1) {
+    if (set_constraints(BLOCK_CONST, env, model, board, index_trans, in_use, N) == -1) {
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
@@ -545,26 +587,27 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     if (err) {
         /* printf("Error code %d in GRBOptimize(): %s\n", err, GRBgeterrormsg(env)); */
         free(ub);
-        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
-    /* For testing - review that model is correct
+    /* For testing - review that model is correct */
     err = GRBwrite(model, "linear_sol.lp");
     if (err) {
         printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
         free(ub);
-        free_resources(env, model, var_names, sol, var_types, in_use, N);
+        free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
-    } */
+    }
     free(in_use);
     free(var_types);
     free_names(&var_names, N);
     free(ub);
-    err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, N*N*N, sol);
+    err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_in_use, sol);
     if (err) {
         /* printf("Error code %d in GRBgetdblattrarray(): %s\n", err, GRBgeterrormsg(env)); */
         free(sol);
+        free(index_trans);
         GRBfreemodel(model);
         GRBfreeenv(env);
         return -1;
@@ -572,11 +615,12 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             for (k=0; k < N; k++) {
-                scores_matrices[k]->matrix[i][j] = sol[calc_index(N, i, j, k+1)];
+                scores_matrices[k]->matrix[i][j] = sol[calc_index(index_trans, N, i, j, k+1)];
             }
         }
     }
     free(sol);
+    free(index_trans);
     GRBfreemodel(model);
     GRBfreeenv(env);
     return 0;
