@@ -833,7 +833,7 @@ int guess_hint(Board* board, int x, int y)
 
 int guess(Board* board, float x, LinkedList* lst)
 {
-  int i, j, k, l, N, old_value;
+  int i, j, k, l, N;
   double* scores_vector;
   double scores_sum;
   int* values_vector;
@@ -889,12 +889,7 @@ int guess(Board* board, float x, LinkedList* lst)
       {
         candidate = choose_random_value(values_vector, scores_vector, scores_sum, l);
         cell = cell_at(board, i, j);
-        old_value = cell->value;
-        cell->value = candidate;
-        if(!is_cell_value_valid(board, cell))
-        {
-          cell->value = old_value;
-        }
+        if(is_value_valid_for_cell(board, i, j, candidate)) cell->value = candidate;
       }
       free(scores_vector);
       free(values_vector);
