@@ -318,7 +318,7 @@ int integer_linear_solve(Board* b, Board* res) {
         in_use[i] = 1.0;
         var_types[i] = GRB_BINARY;
     }
-    printf("Using %d variables\n", num_in_use);
+    /* printf("Using %d variables\n", num_in_use); */
 
     /* Gurobi init */
     err = GRBloadenv(&env, NULL);
