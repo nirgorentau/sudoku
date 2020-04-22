@@ -138,7 +138,7 @@ void append_next(LinkedList* l, Move* value, int move_count) {
         new_node->next = l->curr->next;
         l->curr->next = new_node;
         l->curr = new_node;
-        while (move_forward(l) != -1){
+        while (move_forward(l) != -1){ /* remove rest of list after the node we added */
             remove_curr(l, &bin);
         }
         l->curr = new_node;
@@ -183,10 +183,11 @@ Move* remove_curr(LinkedList* l, int* count){
     }
     *count = l->curr->move_count;
     value = new_move(l->curr->move_count);
+    /* copy move from crr */
     for(i = 0; i < l->curr->move_count; i++) {
         set_move(value, i, l->curr->m[i].i, l->curr->m[i].j, l->curr->m[i].prev_value, l->curr->m[i].curr_value);
     }
-    if (l->curr->prev == NULL) {
+    if (l->curr->prev == NULL) { /*curr is head */
         l->head = l->curr->next;
         if (l->curr->m != NULL) {
             free(l->curr->m);

@@ -66,7 +66,7 @@ double score_at(Scores_matrix* scores_matrix, int i, int j)
     return scores_matrix->matrix[i][j];
 }
 
-/* The variable that represents the value <val> for cell <x,y> is in cell (N^2*x +N*y + z-1)
+/* The index of the variable that represents value <val> for cell <x,y> is in cell (N^2*x +N*y + z-1)
  in the variable array for gurobi */
 int calc_index(int* translation, int N, int x, int y, int val) {
     return translation[N*N*x + N*y + val - 1];
@@ -150,7 +150,7 @@ returns:
 0 == success
 -1 == error
 */
-int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, int* ind_trans, double* in_use, int N) {
+int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, int* ind_trans, int N) {
     int i, j, k;
     int count;
     char* name;
@@ -164,22 +164,20 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, int* ind_t
         free(constraints);
         return -1;
     }
-    if (in_use[0]) {
-        err = 0;
-    }
+    /* Initialize */
     for (i = 0; i < N; i++) {
         const_ind[i] = 0;
         constraints[i] = 0.0;
     }
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
-            count = 0;
-            not_in_block = 1.0;
+            count = 0; /* How many variables will be used in the constraint */
+            not_in_block = 1.0; /* Test if the value we check appears in the current row/column/block */
             for (k = 0; k < N; k++) {
                 constraints[count] = 0.0;
                 if (type == CELL_CONST) {
                     /* i: row, j: column, k: value */
-                    if (calc_index(ind_trans, N, i, j, k+1) != -1) {
+                    if (calc_index(ind_trans, N, i, j, k+1) != -1) { /* Meaning the variable appears in the target function */
                         const_ind[count] = calc_index(ind_trans, N, i, j, k+1);
                         constraints[count] = 1.0;
                         count++;
@@ -216,22 +214,7 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, int* ind_t
                     }
                 }
             }
-            /* If value is in [block/row/column], we want the total sum to be 0 
-            if (not_in_block == 0.0) {
-                for (k = 0; k < N; k++) {
-                    constraints[k] = 1.0;
-                    if (type == CELL_CONST) {
-                        const_ind[k] = calc_index(ind_trans, N, i, j, k+1);
-                    } else if (type == ROW_CONST) {
-                        const_ind[k] = calc_index(ind_trans, N, i, k, j+1);
-                    } else if (type == COL_CONST) {
-                        const_ind[k] = calc_index(ind_trans, N, k, i, j+1);
-                    } else {
-                        const_ind[k] = calc_index(ind_trans, N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1);
-                    }
-                }
-                count = N;
-            }*/
+
             if (((type != CELL_CONST) || (cell_at(b, i, j)->value == 0)) && (count > 0)) {
                 /* We don't add a constraint for an already-filled cell, row, column or block */
                 name = format_name(type, i, j, 0);
@@ -273,7 +256,6 @@ void free_resources(GRBenv** env, GRBmodel** model, char*** var_names, double** 
         GRBfreeenv(*env);
 }
 
-/* TODO: Code cleanup */
 int integer_linear_solve(Board* b, Board* res) {
     GRBenv* env = NULL;
     GRBmodel* model = NULL;
@@ -328,7 +310,6 @@ int integer_linear_solve(Board* b, Board* res) {
         in_use[i] = 1.0;
         var_types[i] = GRB_BINARY;
     }
-    /* printf("Using %d variables\n", num_in_use); */
 
     /* Gurobi init */
     err = GRBloadenv(&env, NULL);
@@ -374,25 +355,25 @@ int integer_linear_solve(Board* b, Board* res) {
     }
 
     /* Single value per cell */
-    if (set_constraints(CELL_CONST, env, model, b, index_translation, in_use, N)) {
+    if (set_constraints(CELL_CONST, env, model, b, index_translation, N)) {
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
     /* Single value per row */
-    if (set_constraints(ROW_CONST, env, model, b, index_translation, in_use, N) == -1) {
+    if (set_constraints(ROW_CONST, env, model, b, index_translation, N) == -1) {
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
     
     /* Single value per column */
-    if (set_constraints(COL_CONST, env, model, b, index_translation, in_use, N) == -1) {
+    if (set_constraints(COL_CONST, env, model, b, index_translation, N) == -1) {
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
 
     /* Single value per block */
-    if (set_constraints(BLOCK_CONST, env, model, b, index_translation, in_use, N) == -1) {
+    if (set_constraints(BLOCK_CONST, env, model, b, index_translation, N) == -1) {
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
@@ -404,14 +385,14 @@ int integer_linear_solve(Board* b, Board* res) {
         return -1;
     }
 
-    /* For testing - review that model is correct */
+    /* For testing - review that model is correct
     err = GRBwrite(model, "int_sol.lp");
     if (err) {
         printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
-    
+    */
 
     err = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &solveable);
     if (err) {
@@ -422,7 +403,7 @@ int integer_linear_solve(Board* b, Board* res) {
     free(in_use);
     free(var_types);
     free_names(&var_names, num_in_use);
-    if (solveable == GRB_OPTIMAL) {
+    if (solveable == GRB_OPTIMAL) { /* the optimal solution is for every cell to have a valid value, meaning the board can be solved */
         err = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_in_use, sol);
         if (err) {
             /* printf("Error code %d in GRBgetdblattrarray(): %s\n", err, GRBgeterrormsg(env)); */
@@ -432,6 +413,7 @@ int integer_linear_solve(Board* b, Board* res) {
             GRBfreeenv(env);
             return -1;
         }
+        /* Copy solution into res */
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++) {
                 tmp = cell_at(b, i, j);
@@ -576,28 +558,28 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     }
 
     /* Single value per cell */
-    if (set_constraints(CELL_CONST, env, model, board, index_trans, in_use, N)) {
+    if (set_constraints(CELL_CONST, env, model, board, index_trans, N)) {
         free(ub);
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
     /* Single value per row */
-    if (set_constraints(ROW_CONST, env, model, board, index_trans, in_use, N) == -1) {
+    if (set_constraints(ROW_CONST, env, model, board, index_trans, N) == -1) {
         free(ub);
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
     
     /* Single value per column */
-    if (set_constraints(COL_CONST, env, model, board, index_trans, in_use, N) == -1) {
+    if (set_constraints(COL_CONST, env, model, board, index_trans, N) == -1) {
         free(ub);
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
     }
 
     /* Single value per block */
-    if (set_constraints(BLOCK_CONST, env, model, board, index_trans, in_use, N) == -1) {
+    if (set_constraints(BLOCK_CONST, env, model, board, index_trans, N) == -1) {
         free(ub);
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
@@ -611,14 +593,14 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         return -1;
     }
 
-    /* For testing - review that model is correct */
+    /* For testing - review that model is correct 
     err = GRBwrite(model, "linear_sol.lp");
     if (err) {
         printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
         free(ub);
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_trans);
         return -1;
-    }
+    }*/
     free(in_use);
     free(var_types);
     free_names(&var_names, num_in_use);
@@ -632,6 +614,7 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         GRBfreeenv(env);
         return -1;
     }
+    /* Set scores into the score matrices */
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             for (k=0; k < N; k++) {
