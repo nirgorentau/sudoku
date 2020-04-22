@@ -1,5 +1,4 @@
 #include "lp_solver.h"
-#include "deterministic_solver.h"
 #include "gurobi_c.h"
 #include <stdlib.h>
 #include <string.h>
