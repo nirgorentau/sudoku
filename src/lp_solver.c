@@ -466,9 +466,9 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     GRBenv* env = NULL;
     GRBmodel* model = NULL;
     int err;
-    char* var_types = (char*) malloc(sizeof(int)*N*N*N);
-    double* sol = (double*) malloc(sizeof(double)*N*N*N);
-    double* in_use = (double*) malloc(sizeof(double)*N*N*N);
+    char* var_types;
+    double* sol;
+    double* in_use;
     int num_in_use = 0;
     int i, j, k;
     char** var_names;
@@ -616,7 +616,9 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             for (k=0; k < N; k++) {
-                scores_matrices[k]->matrix[i][j] = sol[calc_index(index_trans, N, i, j, k+1)];
+                if (calc_index(index_trans, N, i, j, k+1) != -1) {
+                    scores_matrices[k]->matrix[i][j] = sol[calc_index(index_trans, N, i, j, k+1)];
+                }
             }
         }
     }
