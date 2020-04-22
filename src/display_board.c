@@ -1,6 +1,6 @@
 #include "display_board.h"
 
-void print_seperator_row(Board* board)
+static void print_seperator_row(Board* board)
 {
   int i, size;
   size = 4*get_N(board) + board->m + 1;
@@ -11,7 +11,7 @@ void print_seperator_row(Board* board)
   printf("\n");
 }
 
-void print_cell(Board* board, int i, int j)
+static void print_cell(Board* board, int i, int j)
 {
   int val;
   Cell* cell;
@@ -23,7 +23,6 @@ void print_cell(Board* board, int i, int j)
   if(board->mode == SOLVE_MODE && cell->fixed) printf(".");
   else
   {
-    /*if erroneous and board is in edit more or mark errors set to 1 */
     if(!cell->valid && (board->mode == EDIT_MODE || board->mark_errors == 1)) printf("*");
     else printf(" ");
   }

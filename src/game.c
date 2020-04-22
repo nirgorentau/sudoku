@@ -4,46 +4,9 @@
 #include "deterministic_solver.h"
 #include "display_board.h"
 
-/* TODO move some functions to game_util.c
-probably move mode checks to user_io */
 
-int is_board_full(Board* board)
-{
-  int i, j, N;
-  N = get_N(board);
-  for ( i = 0; i < N; i++)
-  {
-    for ( j = 0; j < N; j++)
-    {
-      if(cell_at(board, i, j)->value == 0) return 0;
-    }
-  }
-  return 1;
-}
-
-int is_board_legal(Board* board)
-{
-  int i, j, N;
-  N = get_N(board);
-  for (i = 0; i < N; i++)
-  {
-    for (j = 0; j < N; j++)
-    {
-      if(cell_at(board, i, j)->valid == 0)
-      {
-        return 0;
-      }
-    }
-  }
-  return 1;
-}
-
-int is_board_solved(Board* board)
-{
-  return (is_board_full(board) && is_board_legal(board));
-}
-
-int is_cell_value_valid(Board *board, Cell* cell) {
+/* Check whether the value of the cell is valid*/
+static int is_cell_value_valid(Board *board, Cell* cell) {
   Cell* temp;
   int i, j, N, val;
   int k, block;
@@ -64,6 +27,7 @@ int is_cell_value_valid(Board *board, Cell* cell) {
   return 1;
 }
 
+/* Set the valid field of the cells in the board */
 static int set_valid_values(Board* board)
 {
   int i, j, N;
@@ -80,6 +44,25 @@ static int set_valid_values(Board* board)
   return 0;
 }
 
+/* Check that the board is not erroneous */
+static int is_board_legal(Board* board)
+{
+  int i, j, N;
+  N = get_N(board);
+  for (i = 0; i < N; i++)
+  {
+    for (j = 0; j < N; j++)
+    {
+      if(cell_at(board, i, j)->valid == 0)
+      {
+        return 0;
+      }
+    }
+  }
+  return 1;
+}
+
+/* Set the valid field of the fixed cells in the board, ignoring non-fixed cells */
 static int are_fixed_cells_legal(Board* board)
 {
   int i, j, N, m, n;
@@ -108,6 +91,240 @@ static int are_fixed_cells_legal(Board* board)
   return 1;
 }
 
+
+/* Count the number of empty cells in the board */
+static int count_empty_cells(Board* board)
+{
+  int s;
+  int i, j, N;
+  s = 0;
+  N = get_N(board);
+  for (i = 0; i < N; i++)
+  {
+    for (j = 0; j < N; j++)
+    {
+      if(cell_at(board, i, j)->value == 0)
+      {
+        s++;
+      }
+    }
+  }
+  return s;
+}
+
+/* Fill <empty_cells> with pointers to the empty cells of the board */
+static int get_empty_cells(Cell** empty_cells, Board* board)
+{
+  int s;
+  int i, j, N;
+  s = 0;
+  N = get_N(board);
+  for (i = 0; i < N; i++)
+  {
+    for (j = 0; j < N; j++)
+    {
+      if(cell_at(board, i, j)->value == 0)
+      {
+        empty_cells[s] = cell_at(board, i, j);
+        s++;
+      }
+    }
+  }
+  return s;
+}
+
+/* Return a pointer to a random cell from the first N-i cells in <cells> and switch its position with cells[N-i-1] to avoid repetitions */
+static Cell* get_random_cell(Cell** cells, int N, int i)
+{
+  Cell* temp;
+  int j = rand()%(N-i);
+  temp = cells[j];
+  cells[j] = cells[N-i-1];
+  cells[N-i-1] = temp;
+  return temp;
+}
+
+/* Return a random valid value i (such that values[i] == 0) or 0 if there is none */
+static int get_random_valid_value(int* values, int N)
+{
+  int i, j, s, res;
+  int* temp;
+  s = 0;
+  for ( i = 0; i < N; i++)
+  {
+    if(values[i] == 0) s++;
+  }
+  if(s == 0) return 0;
+  temp = malloc(sizeof(int) * s);
+  if(temp == NULL)
+  {
+    printf("Memory allocation failed\n");
+    exit(-1);
+  }
+  j = 0;
+  for ( i = 0; i < N; i++)
+  {
+    if(values[i] == 0) temp[j++]=i+1;
+  }
+  res = temp[rand()%s];
+  free(temp);
+  return res;
+}
+
+/* Set <values>[i] to 1 if value i isn't valid for <cell> */
+static int set_invalid_values_for_cell(Board* board, Cell* cell, int* values)
+{
+  int i, j, k, block;
+  Cell* temp;
+  int N = get_N(board);
+  i = cell->i;
+  j = cell->j;
+  block=get_block_index(board, i, j);
+  for (k = 0; k < N; k++)
+  {
+    values[k] = 0;
+  }
+  
+  /* mark invalid values */
+  for (k = 0; k < N; k++) {
+    temp = cell_at(board, i, k);
+    if(temp->value != 0) values[(temp->value)-1] = 1;
+    temp = cell_at(board, k, j);
+    if(temp->value != 0) values[(temp->value)-1] = 1;
+    temp = cell_at_block(board, block, k);
+    if(temp->value != 0) values[(temp->value)-1] = 1;
+  }
+  return 0;
+}
+
+/* Allocate and set a new move array based on the differences between the boards to <*moves> and return the length of the array */
+static int get_moves(Board* old_board, Board* new_board, Move** moves)
+{
+  int i, j, N, counter, k;
+  N = get_N(old_board);
+  counter = 0;
+  for ( i = 0; i < N; i++)
+  {
+    for ( j = 0; j < N; j++)
+    {
+      if(cell_at(old_board, i, j)->value != cell_at(new_board, i, j)->value) counter++;
+    }
+  }
+  if(counter) *moves = new_move(counter);
+  k = 0;
+  for ( i = 0; i < N; i++)
+  {
+    for ( j = 0; j < N; j++)
+    {
+      if(cell_at(old_board, i, j)->value != cell_at(new_board, i, j)->value)
+      {
+        set_move(*moves, k, i, j, cell_at(old_board, i, j)->value, cell_at(new_board, i, j)->value);
+        k++;
+      }
+    }
+  }
+  return counter;
+  
+}
+
+/* Return an obvious value for the cell if there is one, or 0 otherwise */
+static int obvious_value(Board* board, int i, int j)
+{ 
+  int N;
+  int* values;
+  int res;
+  int k;
+  if(cell_at(board, i, j)->value != 0) return 0;
+  N = get_N(board);
+  values = malloc(sizeof(int)*N);
+  if(values == NULL)
+  {
+    printf("Memory allocation failed\n");
+    exit(-1);
+  }
+  set_invalid_values_for_cell(board, cell_at(board, i, j), values);
+  /* check only one value is still available (0) and set res to it*/
+  res = 0;
+  for (k = 0; k < N; k++)
+  {
+    if(values[k] == 0)
+    {
+      if (res == 0) res = k+1;
+      else
+      {
+        res = 0;
+        break;
+      }
+      
+    }
+  }
+  free(values);
+  return res;
+}
+
+
+/* Allocate an array of N scores matrices of size N*N */
+static Scores_matrix** new_scores_matrices(int N)
+{
+  Scores_matrix** scores_matrices;
+  int i;
+  scores_matrices = malloc(sizeof(Scores_matrix*) * N);
+  if(scores_matrices == NULL)
+  {
+    printf("Memory allocation failed\n");
+    exit(-1);
+  }
+  for (i = 0; i < N; i++)
+  {
+    scores_matrices[i] = new_scores_matrix(N);
+  }
+  return scores_matrices;
+}
+
+/* Free an array of scores matrices */
+static void free_scores_matrices(Scores_matrix** scores_matrices, int N)
+{
+  int i;
+  for (i = 0; i < N; i++)
+  {
+    free_scores_matrix(scores_matrices[i]);
+  }
+  free(scores_matrices);
+}
+
+int is_board_full(Board* board)
+{
+  int i, j, N;
+  N = get_N(board);
+  for ( i = 0; i < N; i++)
+  {
+    for ( j = 0; j < N; j++)
+    {
+      if(cell_at(board, i, j)->value == 0) return 0;
+    }
+  }
+  return 1;
+}
+
+/* Choose a random value from <values> with probability proportional to their score */
+static int choose_random_value(int* values, double* scores, double sum, int size)
+{
+  int i;
+  double random_double;
+  random_double = ((double)(rand())/RAND_MAX) * sum;
+  for ( i = 0; i < size; i++)
+  {
+    if(random_double < scores[i]) return values[i];
+  }
+
+  return 0;
+}
+
+int is_board_solved(Board* board)
+{
+  return (is_board_full(board) && is_board_legal(board));
+}
+
 int solve(Board** board, char* filename, LinkedList** lst)
 {
   Board* temp;
@@ -126,7 +343,6 @@ int solve(Board** board, char* filename, LinkedList** lst)
   *board = new_board(temp->m, temp->n);
   copy_board(*board, temp);
   (*board)->mode = SOLVE_MODE;
-  /* TODO: mark_errors? */
   free_list(*lst);
   *lst = new_head();
   free_board(temp);
@@ -138,7 +354,6 @@ int edit_default(Board** board, LinkedList** lst)
   free_board(*board);
   *board = new_board(3, 3);
   (*board)->mode = EDIT_MODE;
-  /* TODO: mark_errors? */
   free_list(*lst);
   *lst = new_head();
   return 0;
@@ -160,7 +375,6 @@ int edit(Board** board, char* filename, LinkedList** lst)
   *board = new_board(temp->m, temp->n);
   copy_board(*board, temp);
   (*board)->mode = EDIT_MODE;
-  /* TODO: mark_errors? */
   free_list(*lst);
   *lst = new_head();
   free_board(temp);
@@ -265,140 +479,6 @@ int validate(Board* board)
     printf("The board is not solvable\n");
   }
   return 0;
-}
-
-static int count_empty_cells(Board* board)
-{
-  int s;
-  int i, j, N;
-  s = 0;
-  N = get_N(board);
-  for (i = 0; i < N; i++)
-  {
-    for (j = 0; j < N; j++)
-    {
-      if(cell_at(board, i, j)->value == 0)
-      {
-        s++;
-      }
-    }
-  }
-  return s;
-}
-
-/* Fill <empty_cells> with pointers to the empty cells of the board */
-static int get_empty_cells(Cell** empty_cells, Board* board)
-{
-  int s;
-  int i, j, N;
-  s = 0;
-  N = get_N(board);
-  for (i = 0; i < N; i++)
-  {
-    for (j = 0; j < N; j++)
-    {
-      if(cell_at(board, i, j)->value == 0)
-      {
-        empty_cells[s] = cell_at(board, i, j);
-        s++;
-      }
-    }
-  }
-  return s;
-}
-
-/* Return a pointer to a random cell from the first N-i cells in <cells> and switch its position with cells[N-i-1] to avoid repetitions */
-Cell* get_random_cell(Cell** cells, int N, int i)
-{
-  Cell* temp;
-  int j = rand()%(N-i);
-  temp = cells[j];
-  cells[j] = cells[N-i-1];
-  cells[N-i-1] = temp;
-  return temp;
-}
-
-/* Return a random valid value i (such that values[i] == 0) or 0 if there is none */
-int get_random_valid_value(int* values, int N)
-{
-  int i, j, s, res;
-  int* temp;
-  s = 0;
-  for ( i = 0; i < N; i++)
-  {
-    if(values[i] == 0) s++;
-  }
-  if(s == 0) return 0;
-  temp = malloc(sizeof(int) * s);
-  if(temp == NULL)
-  {
-    printf("Memory allocation failed\n");
-    exit(-1);
-  }
-  j = 0;
-  for ( i = 0; i < N; i++)
-  {
-    if(values[i] == 0) temp[j++]=i+1;
-  }
-  res = temp[rand()%s];
-  free(temp);
-  return res;
-}
-
-/* Set <values>[i] to 1 if value i isn't valid for <cell> */
-int set_invalid_values_for_cell(Board* board, Cell* cell, int* values)
-{
-  int i, j, k, block;
-  Cell* temp;
-  int N = get_N(board);
-  i = cell->i;
-  j = cell->j;
-  block=get_block_index(board, i, j);
-  for (k = 0; k < N; k++)
-  {
-    values[k] = 0;
-  }
-  
-  /* mark invalid values */
-  for (k = 0; k < N; k++) {
-    temp = cell_at(board, i, k);
-    if(temp->value != 0) values[(temp->value)-1] = 1;
-    temp = cell_at(board, k, j);
-    if(temp->value != 0) values[(temp->value)-1] = 1;
-    temp = cell_at_block(board, block, k);
-    if(temp->value != 0) values[(temp->value)-1] = 1;
-  }
-  return 0;
-}
-
-/* Allocate and set a new move array based on the differences between the boards to <*moves> and return the length of the array */
-int get_moves(Board* old_board, Board* new_board, Move** moves)
-{
-  int i, j, N, counter, k;
-  N = get_N(old_board);
-  counter = 0;
-  for ( i = 0; i < N; i++)
-  {
-    for ( j = 0; j < N; j++)
-    {
-      if(cell_at(old_board, i, j)->value != cell_at(new_board, i, j)->value) counter++;
-    }
-  }
-  if(counter) *moves = new_move(counter);
-  k = 0;
-  for ( i = 0; i < N; i++)
-  {
-    for ( j = 0; j < N; j++)
-    {
-      if(cell_at(old_board, i, j)->value != cell_at(new_board, i, j)->value)
-      {
-        set_move(*moves, k, i, j, cell_at(old_board, i, j)->value, cell_at(new_board, i, j)->value);
-        k++;
-      }
-    }
-  }
-  return counter;
-  
 }
 
 int generate(Board* board, int x, int y, LinkedList* lst)
@@ -648,41 +728,6 @@ int num_solutions(Board* board)
   return 0;
 }
 
-/* Return an obvious value for the cell if there is one, or 0 otherwise */
-static int obvious_value(Board* board, int i, int j)
-{ 
-  int N;
-  int* values;
-  int res;
-  int k;
-  if(cell_at(board, i, j)->value != 0) return 0;
-  N = get_N(board);
-  values = malloc(sizeof(int)*N);
-  if(values == NULL)
-  {
-    printf("Memory allocation failed\n");
-    exit(-1);
-  }
-  set_invalid_values_for_cell(board, cell_at(board, i, j), values);
-  /* check only one value is still available (0) and set res to it*/
-  res = 0;
-  for (k = 0; k < N; k++)
-  {
-    if(values[k] == 0)
-    {
-      if (res == 0) res = k+1;
-      else
-      {
-        res = 0;
-        break;
-      }
-      
-    }
-  }
-  free(values);
-  return res;
-}
-
 int autofill(Board* board, LinkedList* lst)
 {
   Board* temp;
@@ -735,33 +780,6 @@ int autofill(Board* board, LinkedList* lst)
   return 0;
 }
 
-static Scores_matrix** new_scores_matrices(int N)
-{
-  Scores_matrix** scores_matrices;
-  int i;
-  scores_matrices = malloc(sizeof(Scores_matrix*) * N);
-  if(scores_matrices == NULL)
-  {
-    printf("Memory allocation failed\n");
-    exit(-1);
-  }
-  for (i = 0; i < N; i++)
-  {
-    scores_matrices[i] = new_scores_matrix(N);
-  }
-  return scores_matrices;
-}
-
-static void free_scores_matrices(Scores_matrix** scores_matrices, int N)
-{
-  int i;
-  for (i = 0; i < N; i++)
-  {
-    free_scores_matrix(scores_matrices[i]);
-  }
-  free(scores_matrices);
-}
-
 int guess_hint(Board* board, int x, int y)
 {
   int i, j, k, N;
@@ -811,20 +829,6 @@ int guess_hint(Board* board, int x, int y)
   free_board(temp);
   free_scores_matrices(scores_matrices, N);
   return 0;
-}
-
-int choose_random_value(int* values, double* scores, double sum, int size)
-{
-  int i;
-  double random_double;
-  random_double = ((double)(rand())/RAND_MAX) * sum;
-  for ( i = 0; i < size; i++)
-  {
-    if(random_double < scores[i]) return values[i];
-  }
-
-  return 0;
-  
 }
 
 int guess(Board* board, float x, LinkedList* lst)
