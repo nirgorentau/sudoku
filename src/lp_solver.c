@@ -288,6 +288,11 @@ int integer_linear_solve(Board* b, Board* res) {
     Cell* tmp;
     char** var_names;
     int* index_translation = (int*) malloc(sizeof(int)*N*N*N); /* holds translations from (x, y, val) to index of variable. -1 if variable not in use */
+    if (index_translation == NULL)
+    {
+        printf("Memory allocation failed\n");
+        exit(-1);
+    }
     /* Count how many variables we actually need (legal values for empty cells) */
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
@@ -305,6 +310,11 @@ int integer_linear_solve(Board* b, Board* res) {
     var_types = (char*) malloc(sizeof(char)*num_in_use);
     var_names = (char**) malloc(sizeof(char*)*num_in_use);
     sol = (double*) malloc(sizeof(double)*num_in_use);
+    if ((in_use == NULL) || (var_types == NULL) || (var_names == NULL) || (sol == NULL))
+    {
+        printf("Memory allocation failed\n");
+        exit(-1);
+    }
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             for (k = 1; k <= N; k++) {
@@ -473,6 +483,11 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     char** var_names;
     double* ub;
     int* index_trans = (int*) malloc(sizeof(int)*N*N*N);
+    if (index_trans == NULL)
+    {
+        printf("Memory allocation failed\n");
+        exit(-1);
+    }
     /* Count how many variables we actually need (legal values for empty cells) */
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
@@ -491,6 +506,11 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
     var_names = (char**) malloc(sizeof(char*)*num_in_use);
     ub = (double*) malloc(sizeof(double)*num_in_use);
     sol = (double*) malloc(sizeof(double)*num_in_use);
+    if ((in_use == NULL) || (var_types == NULL) || (var_names == NULL) || (ub == NULL) || (sol == NULL))
+    {
+        printf("Memory allocation failed\n");
+        exit(-1);
+    }
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             for (k = 1; k <= N; k++) {

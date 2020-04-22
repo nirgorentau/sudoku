@@ -5,7 +5,7 @@
 Stack* new_stack() {
     Stack* s = (Stack*) malloc(sizeof(Stack));
     if (s == NULL) {
-        printf("Memory allocation for stack failed\n");
+        printf("Memory allocation failed\n");
         exit(-1);
     }
     s->size = 0;

@@ -9,8 +9,9 @@ Move* new_move(int count) {
         return NULL;
     }
     m = (Move*) malloc(count*sizeof(Move));
-    if (m == NULL) {
-        printf("Memory allocation for move object failed\n");
+    if (m == NULL)
+    {
+        printf("Memory allocation failed\n");
         exit(-1);
     }
     for(i = 0; i < count; i++) {
@@ -34,8 +35,9 @@ void set_move(Move* m, int index,  int i, int j, int prev_val, int curr_val) {
 
 LinkedList* new_list() {
     LinkedList* l = (LinkedList*) malloc(sizeof(LinkedList));
-    if (l == NULL) {
-        printf("Memory allocation for list failed\n");
+    if (l == NULL)
+    {
+        printf("Memory allocation failed\n");
         exit(-1);
     }
     l->head = NULL;
@@ -46,6 +48,11 @@ LinkedList* new_list() {
 LinkedList* new_head() {
     LinkedList* l = new_list();
     Node* head = (Node*) malloc(sizeof(Node));
+    if (head == NULL)
+    {
+        printf("Memory allocation failed\n");
+        exit(-1);
+    }
     head->move_count = 0;
     head->next = NULL;
     head->prev = NULL;
@@ -112,7 +119,7 @@ void append_next(LinkedList* l, Move* value, int move_count) {
     Node* new_node = (Node*) malloc(sizeof(Node));
     int bin; /* To give to remove_curr */
     if (new_node == NULL) {
-        printf("Memory allocation for list object failed\n");
+        printf("Memory allocation failed\n");
         exit(-1);
     }
     new_node->m = value;
@@ -141,7 +148,7 @@ void append_next(LinkedList* l, Move* value, int move_count) {
 void append_prev(LinkedList* l, Move* value, int move_count) {
     Node* new_node = (Node*) malloc(sizeof(Node));
     if (new_node == NULL) {
-        printf("Memory allocation for list object failed\n");
+        printf("Memory allocation failed\n");
         exit(-1);
     }
     new_node->m = value;
