@@ -210,7 +210,7 @@ int set_constraints(int type, GRBenv* env, GRBmodel* model, Board* b, int* ind_t
                     if (cell_at_block(b, i, k)->value == j+1) {
                         not_in_block = 0.0;
                     }
-                    if (calc_index(ind_trans, N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1) == 1.0) {
+                    if (calc_index(ind_trans, N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1) != -1) {
                         const_ind[count] = calc_index(ind_trans, N, cell_at_block(b, i, k)->i, cell_at_block(b, i, k)->j, j+1);
                         constraints[count] = 1.0;
                         count++;
@@ -319,6 +319,7 @@ int integer_linear_solve(Board* b, Board* res) {
         in_use[i] = 1.0;
         var_types[i] = GRB_BINARY;
     }
+    printf("Using %d variables\n", num_in_use);
 
     /* Gurobi init */
     err = GRBloadenv(&env, NULL);
@@ -394,14 +395,13 @@ int integer_linear_solve(Board* b, Board* res) {
         return -1;
     }
 
-    /* For testing - review that model is correct
+    /* For testing - review that model is correct */
     err = GRBwrite(model, "int_sol.lp");
     if (err) {
         printf("Error code %d in GRBwrite(): %s\n", err, GRBgeterrormsg(env));
         free_resources(&env, &model, &var_names, &sol, &var_types, &in_use, num_in_use, &index_translation);
         return -1;
     }
-    */
     
 
     err = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &solveable);
