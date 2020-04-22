@@ -13,4 +13,4 @@ test.o:
 lp_solver.o:
 	$(CC) $(CFLAGS) $(GUROBI_COMP) -c $(IDIR)/lp_solver.c $(IDIR)/deterministic_solver.c  $(IDIR)/board.c $(IDIR)/stack.c $(IDIR)/linked_list.c $(IDIR)/display_board.c $(IDIR)/file_io.c $(CFLAGS)
 clean:
-	rm -f *.o $(EXEC)
+	rm -f *.o $(EXEC) int_sol.lp sol_log.log
