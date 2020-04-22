@@ -5,7 +5,7 @@
 #include "display_board.h"
 
 
-/* Check whether the value of the cell is valid*/
+/* Check whether the value of the cell is valid */
 static int is_cell_value_valid(Board *board, Cell* cell) {
   Cell* temp;
   int i, j, N, val;

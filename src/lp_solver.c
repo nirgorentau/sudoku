@@ -294,7 +294,7 @@ int integer_linear_solve(Board* b, Board* res) {
         for (j = 0; j < N; j++) {
             for (k = 1; k <= N; k++) {
                 index_translation[N*N*i + N*j + k-1] = -1;
-                if(cell_at(b, i, j)->value == 0 && is_valid(b, i, j, k)) {
+                if(cell_at(b, i, j)->value == 0 && is_value_valid_for_cell(b, i, j, k)) {
                     index_translation[N*N*i + N*j + k-1] = num_in_use;
                     num_in_use++;
                 }
@@ -479,7 +479,7 @@ int linear_solve(Board* board, Scores_matrix** scores_matrices, int N) {
         for (j = 0; j < N; j++) {
             for (k = 1; k <= N; k++) {
                 index_trans[N*N*i + N*j + k-1] = -1;
-                if(cell_at(board, i, j)->value == 0 && is_valid(board, i, j, k)) {
+                if(cell_at(board, i, j)->value == 0 && is_value_valid_for_cell(board, i, j, k)) {
                     index_trans[N*N*i + N*j + k-1] = num_in_use;
                     num_in_use++;
                 }

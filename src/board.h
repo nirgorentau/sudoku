@@ -47,4 +47,7 @@ Cell* cell_at_block(Board* board, int block_i, int cell_i);
 /* Copy the contents of <from> to <to> */
 int copy_board(Board* to, Board* from);
 
+/* Check if the value <val> is valid for the cell in row i and column j */
+int is_value_valid_for_cell(Board *b, int i, int j, int val);
+
 #endif

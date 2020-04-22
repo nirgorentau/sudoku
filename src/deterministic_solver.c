@@ -28,32 +28,12 @@ void next_empty(Board* b, int i, int j, int* ret) {
     ret[0] = N;
 }
 
-/* TODO: Move to appropriate module */
-int is_valid(Board *b, int i, int j, int val) {
-    int k, block=get_block_index(b, i, j), N = get_N(b);
-    if (val == 0) {
-        return 1;
-    }
-    if (cell_at(b, i, j)->fixed == 1) {
-        return 0;
-    }
-    for (k = 0; k < N; k++) {
-        if (cell_at(b, i, k)->value == val || cell_at(b, k, j)->value == val) {
-            return 0;
-        }
-        if (cell_at_block(b, block, k)->value == val) {
-            return 0;
-        }
-    }
-    return 1;
-}
-
 /* Returns the first valid value for cell (i,j) that is >= min.
 Returns 0 if there is no such value */
 int lowest_available_option(Board* b, int i, int j, int min) {
     int N = get_N(b), k;
     for (k = min; k <= N; k++) {
-        if (is_valid(b, i, j, k)) {
+        if (is_value_valid_for_cell(b, i, j, k)) {
             return k;
         }
     }

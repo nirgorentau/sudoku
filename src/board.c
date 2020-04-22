@@ -10,6 +10,25 @@ static void block_indices_to_global_indices(int m, int n, int block_i, int cell_
   *k += cell_i % n;
 }
 
+int is_value_valid_for_cell(Board *b, int i, int j, int val) {
+    int k, block=get_block_index(b, i, j), N = get_N(b);
+    if (val == 0) {
+        return 1;
+    }
+    if (cell_at(b, i, j)->fixed == 1) {
+        return 0;
+    }
+    for (k = 0; k < N; k++) {
+        if (cell_at(b, i, k)->value == val || cell_at(b, k, j)->value == val) {
+            return 0;
+        }
+        if (cell_at_block(b, block, k)->value == val) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 Board* new_board(int m, int n)
 {
   int i, j, N;
