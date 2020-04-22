@@ -903,7 +903,7 @@ int guess(Board* board, float x, LinkedList* lst)
   {
     append_next(lst, moves, move_count);
   }
-  free(temp);
+  free_board(temp);
   free_scores_matrices(scores_matrices, N);
   return 0;
 }
