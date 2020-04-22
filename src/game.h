@@ -10,9 +10,6 @@ int is_board_full(Board* board);
 /* Return true iff all cells are filled with a non 0 value and the board is legal */
 int is_board_solved(Board* board);
 
-/* Check whether the value of the cell is valid*/
-int is_cell_value_valid(Board *b, Cell* cell);
-
 /* Start a puzzle in solve mode*/
 int solve(Board** board, char* filename, LinkedList** lst);
 

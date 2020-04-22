@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "board.h"
 
+/* Translate access based on block index and position in block to row-column indices and store the result in <*l, *k> */
 static void block_indices_to_global_indices(int m, int n, int block_i, int cell_i, int* l, int* k)
 {
   *l = (block_i / m) * m;
@@ -88,7 +89,6 @@ Cell* cell_at_block(Board* board, int block_i, int cell_i)
   return &(board->matrix[l][k]);
 }
 
-/* Copy the contents of <from> to <to> */
 int copy_board(Board* to, Board* from)
 {
   int i, j, N;
