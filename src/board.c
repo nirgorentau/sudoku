@@ -43,7 +43,7 @@ Board* new_board(int m, int n)
   board->m = m;
   board->n = n;
   board->mode = 0;
-  board->mark_errors = 0;
+  board->mark_errors = 1;
   board->matrix = malloc(sizeof(Cell*) * N);
   if(board->matrix == NULL)
     {
